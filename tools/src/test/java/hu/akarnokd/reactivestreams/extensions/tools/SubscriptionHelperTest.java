@@ -16,7 +16,24 @@
 
 package hu.akarnokd.reactivestreams.extensions.tools;
 
+import java.lang.reflect.*;
+
+import org.junit.*;
+
 public class SubscriptionHelperTest {
     
-    
+    @Test
+    public void noInstances() throws Exception {
+        Constructor<SubscriptionHelper> c = SubscriptionHelper.class.getDeclaredConstructor();
+        
+        c.setAccessible(true);
+        
+        try {
+            c.newInstance();
+            Assert.fail("Should have thrown!");
+        } catch (InvocationTargetException ex) {
+            Assert.assertTrue(ex.toString(), ex.getCause() instanceof IllegalStateException);
+            Assert.assertEquals(ex.toString(), "No instances!", ex.getCause().getMessage());
+        }
+    }
 }
