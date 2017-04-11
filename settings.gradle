@@ -1,11 +1,11 @@
 rootProject.name = 'reactive-streams-jvm-extensions-xp'
 
-include ':reactive-streams-jvm-extensions-xp-api'
-include ':reactive-streams-jvm-extensions-xp-tools'
-include ':reactive-streams-jvm-extensions-xp-tck'
-include ':reactive-streams-jvm-extensions-xp-examples'
+include ':reactive-streams-extensions'
+include ':reactive-streams-extensions-tools'
+include ':reactive-streams-extensions-tck'
+include ':reactive-streams-extensions-examples'
 
-project(':reactive-streams-jvm-extensions-xp-api').projectDir = "$rootDir/api" as File
-project(':reactive-streams-jvm-extensions-xp-tck').projectDir = "$rootDir/tck" as File
-project(':reactive-streams-jvm-extensions-xp-tools').projectDir = "$rootDir/tools" as File
-project(':reactive-streams-jvm-extensions-xp-examples').projectDir = "$rootDir/examples" as File
+project(':reactive-streams-extensions').projectDir = "$rootDir/api" as File
+project(':reactive-streams-extensions-tck').projectDir = "$rootDir/tck" as File
+project(':reactive-streams-extensions-tools').projectDir = "$rootDir/tools" as File
+project(':reactive-streams-extensions-examples').projectDir = "$rootDir/examples" as File
