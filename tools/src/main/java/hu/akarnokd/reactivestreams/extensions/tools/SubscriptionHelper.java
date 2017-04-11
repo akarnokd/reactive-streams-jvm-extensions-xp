@@ -45,6 +45,20 @@ public final class SubscriptionHelper {
         return u;
     }
 
+    public static boolean isTerminalThrowable(Throwable error) {
+        return error == TERMINATED;
+    }
+
+    public static boolean isCancelled(Subscription subscription) {
+        return subscription == CancelledSubscription.INSTANCE;
+    }
+
+    public enum SetOnceResult {
+        SUCCESS,
+        ALREADY_SET,
+        CANCELLED
+    }
+
     ///////////////////////////////////////////////////////////////////////////////////////////
     // Atomic classes versions
     ///////////////////////////////////////////////////////////////////////////////////////////
@@ -69,10 +83,6 @@ public final class SubscriptionHelper {
 
     public static boolean isCancelled(AtomicReference<Subscription> field) {
         return field.get() == CancelledSubscription.INSTANCE;
-    }
-
-    public static boolean isCancelled(Subscription subscription) {
-        return subscription == CancelledSubscription.INSTANCE;
     }
 
     public static boolean replace(AtomicReference<Subscription> field, Subscription next) {
@@ -106,12 +116,6 @@ public final class SubscriptionHelper {
                 return true;
             }
         }
-    }
-
-    public enum SetOnceResult {
-        SUCCESS,
-        ALREADY_SET,
-        CANCELLED
     }
 
     public static SetOnceResult setOnce(AtomicReference<Subscription> field, Subscription subscription) {
@@ -198,10 +202,6 @@ public final class SubscriptionHelper {
         return error.get() == TERMINATED;
     }
 
-    public static boolean isTerminalThrowable(Throwable error) {
-        return error == TERMINATED;
-    }
-
     public static <T> boolean serializedOnNext(Subscriber<? super T> subscriber, AtomicLong wip, AtomicReference<Throwable> error, T item) {
         if (wip.get() == 0L && wip.compareAndSet(0, 1)) {
             subscriber.onNext(item);
@@ -258,10 +258,10 @@ public final class SubscriptionHelper {
     // Field updater versions
     ///////////////////////////////////////////////////////////////////////////////////////////
 
-    public static <T> boolean cancel(T instance, AtomicReferenceFieldUpdater<T, Subscription> updater) {
-        Subscription current = updater.get(instance);
+    public static <T> boolean cancel(T instance, AtomicReferenceFieldUpdater<T, Subscription> field) {
+        Subscription current = field.get(instance);
         if (current != CancelledSubscription.INSTANCE) {
-            current = updater.getAndSet(instance, CancelledSubscription.INSTANCE);
+            current = field.getAndSet(instance, CancelledSubscription.INSTANCE);
             if (current != CancelledSubscription.INSTANCE) {
                 if (current != null) {
                     current.cancel();
@@ -272,4 +272,180 @@ public final class SubscriptionHelper {
         return false;
     }
 
+    public static <T> void clear(T instance, AtomicReferenceFieldUpdater<T, Subscription> field) {
+        field.lazySet(instance, CancelledSubscription.INSTANCE);
+    }
+
+    public static <T> boolean isCancelled(T instance, AtomicReferenceFieldUpdater<T, Subscription> field) {
+        return field.get(instance) == CancelledSubscription.INSTANCE;
+    }
+
+    public static <T> boolean replace(T instance, AtomicReferenceFieldUpdater<T, Subscription> field, Subscription next) {
+        for (;;) {
+            Subscription current = field.get(instance);
+            if (current == CancelledSubscription.INSTANCE) {
+                if (next != null) {
+                    next.cancel();
+                }
+                return false;
+            }
+            if (field.compareAndSet(instance, current, next)) {
+                return true;
+            }
+        }
+    }
+
+    public static <T> boolean update(T instance, AtomicReferenceFieldUpdater<T, Subscription> field, Subscription next) {
+        for (;;) {
+            Subscription current = field.get(instance);
+            if (current == CancelledSubscription.INSTANCE) {
+                if (next != null) {
+                    next.cancel();
+                }
+                return false;
+            }
+            if (field.compareAndSet(instance, current, next)) {
+                if (current != null) {
+                    current.cancel();
+                }
+                return true;
+            }
+        }
+    }
+
+    public static <T> SetOnceResult setOnce(T instance, AtomicReferenceFieldUpdater<T, Subscription> field, Subscription subscription) {
+        if (subscription == null) {
+            throw new NullPointerException("subscription is null");
+        }
+        if (!field.compareAndSet(instance, null, subscription)) {
+            subscription.cancel();
+            if (field.get(instance) == CancelledSubscription.INSTANCE) {
+                return SetOnceResult.CANCELLED;
+            }
+            return SetOnceResult.ALREADY_SET;
+        }
+        return SetOnceResult.SUCCESS;
+    }
+
+    public static <T> SetOnceResult deferredSetOnce(T instance, AtomicReferenceFieldUpdater<T, Subscription> field, AtomicLongFieldUpdater<T> requested, Subscription subscription) {
+        if (subscription == null) {
+            throw new NullPointerException("subscription is null");
+        }
+        if (!field.compareAndSet(instance, null, subscription)) {
+            subscription.cancel();
+            if (field.get(instance) == CancelledSubscription.INSTANCE) {
+                return SetOnceResult.CANCELLED;
+            }
+            return SetOnceResult.ALREADY_SET;
+        }
+
+        long r = requested.getAndSet(instance, 0L);
+        if (r != 0L) {
+            subscription.request(r);
+        }
+        return SetOnceResult.SUCCESS;
+    }
+
+    public static <T> boolean deferredRequest(T instance, AtomicReferenceFieldUpdater<T, Subscription> field, AtomicLongFieldUpdater<T> requested, long n) {
+        Subscription current = field.get(instance);
+        if (current != null) {
+            current.request(n);
+            return true;
+        }
+        getAndAddRequested(instance, requested, n);
+        current = field.get(instance);
+        if (current != null) {
+            long r = requested.getAndSet(instance, 0L);
+            if (r != 0L) {
+                current.request(r);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static <T> long getAndAddRequested(T instance, AtomicLongFieldUpdater<T> requested, long n) {
+        for (;;) {
+            long r = requested.get(instance);
+            if (r == Long.MAX_VALUE) {
+                return Long.MAX_VALUE;
+            }
+            long u = addAndCap(r, n);
+            if (requested.compareAndSet(instance, r, u)) {
+                return r;
+            }
+        }
+    }
+
+    public static <T> long subtractAndGetRequested(T instance, AtomicLongFieldUpdater<T> requested, long n) {
+        for (;;) {
+            long r = requested.get(instance);
+            if (r == Long.MAX_VALUE) {
+                return Long.MAX_VALUE;
+            }
+            long u = r - n;
+            if (u < 0L) {
+                throw new IllegalStateException("Can't have negative requested amount: " + u);
+            }
+            if (requested.compareAndSet(instance, r, u)) {
+                return u;
+            }
+        }
+    }
+
+    public static <T> boolean isTerminalThrowable(T instance, AtomicReferenceFieldUpdater<T, Throwable> error) {
+        return error.get(instance) == TERMINATED;
+    }
+
+    public static <T, U> boolean serializedOnNext(Subscriber<? super T> subscriber, U instance, AtomicLongFieldUpdater<U> wip, AtomicReferenceFieldUpdater<U, Throwable> error, T item) {
+        if (wip.get(instance) == 0L && wip.compareAndSet(instance, 0, 1)) {
+            subscriber.onNext(item);
+            if (wip.decrementAndGet(instance) != 0) {
+                Throwable ex = error.get(instance);
+                if (ex == TERMINATED) {
+                    subscriber.onComplete();
+                } else {
+                    subscriber.onError(ex);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public static <T, U> boolean serializedTryOnNext(ConditionalSubscriber<? super T> subscriber, U instance, AtomicLongFieldUpdater<U> wip, AtomicReferenceFieldUpdater<U, Throwable> error, T item) {
+        if (wip.get(instance) == 0L && wip.compareAndSet(instance, 0, 1)) {
+            boolean b = subscriber.tryOnNext(item);
+            if (wip.decrementAndGet(instance) != 0) {
+                Throwable ex = error.get(instance);
+                if (ex == TERMINATED) {
+                    subscriber.onComplete();
+                } else {
+                    subscriber.onError(ex);
+                }
+            }
+            return b;
+        }
+        return false;
+    }
+
+    public static <T, U> boolean serializedOnError(Subscriber<? super T> subscriber, U instance, AtomicLongFieldUpdater<U> wip, AtomicReferenceFieldUpdater<U, Throwable> error, Throwable t) {
+        if (error.compareAndSet(instance, null, t)) {
+            if (wip.getAndIncrement(instance) == 0) {
+                subscriber.onError(t);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public static <T, U> boolean serializedOnComplete(Subscriber<? super T> subscriber, U instance, AtomicLongFieldUpdater<U> wip, AtomicReferenceFieldUpdater<U, Throwable> error) {
+        if (error.compareAndSet(instance, null, TERMINATED)) {
+            if (wip.getAndIncrement(instance) == 0) {
+                subscriber.onComplete();
+            }
+            return true;
+        }
+        return false;
+    }
 }

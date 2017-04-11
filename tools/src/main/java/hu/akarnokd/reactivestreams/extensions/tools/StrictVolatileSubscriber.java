@@ -46,38 +46,68 @@ public class StrictVolatileSubscriber<T> implements RelaxedSubscriber<T>, Subscr
     static final AtomicReferenceFieldUpdater<StrictVolatileSubscriber, Throwable> ERROR =
             AtomicReferenceFieldUpdater.newUpdater(StrictVolatileSubscriber.class, Throwable.class, "error");
 
+    protected volatile int once;
+    @SuppressWarnings("rawtypes")
+    protected static final AtomicIntegerFieldUpdater<StrictVolatileSubscriber> ONCE =
+            AtomicIntegerFieldUpdater.newUpdater(StrictVolatileSubscriber.class, "once");
+
     public StrictVolatileSubscriber(Subscriber<? super T> actual) {
         this.actual = actual;
     }
 
     @Override
     public void onNext(T t) {
-        // TODO Auto-generated method stub
+        SubscriptionHelper.serializedOnNext(actual, this, WIP, ERROR, t);
     }
 
     @Override
     public void onError(Throwable t) {
-        // TODO Auto-generated method stub
+        SubscriptionHelper.clear(this, UPSTREAM);
+        if (!SubscriptionHelper.serializedOnError(actual, this, WIP, ERROR, t)) {
+            undeliverableException(t);
+        }
     }
 
     @Override
     public void onComplete() {
-        // TODO Auto-generated method stub
+        SubscriptionHelper.clear(this, UPSTREAM);
+        SubscriptionHelper.serializedOnComplete(actual, this, WIP, ERROR);
     }
 
     @Override
     public void request(long n) {
-        // TODO Auto-generated method stub
+        if (n <= 0L) {
+            onError(new IllegalArgumentException("§3.9 violated: positive request amount required but it was " + n));
+        } else {
+            SubscriptionHelper.deferredRequest(this, UPSTREAM, REQUESTED, n);
+        }
     }
 
     @Override
     public void cancel() {
-        // TODO Auto-generated method stub
+        SubscriptionHelper.cancel(this, UPSTREAM);
     }
 
     @Override
     public void onSubscribe(Subscription s) {
-        // TODO Auto-generated method stub
+        if (s == null) {
+            throw new NullPointerException("s is null");
+        }
+        if (ONCE.compareAndSet(this, 0, 1)) {
+
+            actual.onSubscribe(this);
+
+            UPSTREAM.lazySet(this, s);
+            long r = REQUESTED.getAndSet(this, 0L);
+            if (r != 0L) {
+                s.request(r);
+            }
+        } else {
+            if (!SubscriptionHelper.isCancelled(upstream)) {
+                cancel();
+                onError(new IllegalStateException("Subscription already set!"));
+            }
+        }
     }
 
     protected void undeliverableException(Throwable error) {

@@ -34,12 +34,15 @@ public class StrictAtomicSubscriber<T> implements RelaxedSubscriber<T>, Subscrip
 
     protected final AtomicReference<Throwable> error;
 
+    protected final AtomicBoolean once;
+
     public StrictAtomicSubscriber(Subscriber<? super T> actual) {
         this.actual = actual;
         this.upstream = new AtomicReference<Subscription>();
         this.requested = new AtomicLong();
         this.wip = new AtomicLong();
         this.error = new AtomicReference<Throwable>();
+        this.once = new AtomicBoolean();
     }
 
     @Override
@@ -80,10 +83,11 @@ public class StrictAtomicSubscriber<T> implements RelaxedSubscriber<T>, Subscrip
         if (s == null) {
             throw new NullPointerException("s is null");
         }
-        if (upstream.compareAndSet(null, s)) {
+        if (once.compareAndSet(false, true)) {
 
             actual.onSubscribe(this);
 
+            upstream.lazySet(s);
             long r = requested.getAndSet(0L);
             if (r != 0L) {
                 s.request(r);
