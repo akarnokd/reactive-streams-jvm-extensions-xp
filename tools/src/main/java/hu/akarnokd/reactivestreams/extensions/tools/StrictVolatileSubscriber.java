@@ -25,22 +25,22 @@ import hu.akarnokd.reactivestreams.extensions.RelaxedSubscriber;
 public class StrictVolatileSubscriber<T> implements RelaxedSubscriber<T>, Subscription {
 
     protected final Subscriber<? super T> actual;
-    
+
     protected volatile Subscription upstream;
     @SuppressWarnings("rawtypes")
     protected static final AtomicReferenceFieldUpdater<StrictVolatileSubscriber, Subscription> UPSTREAM =
             AtomicReferenceFieldUpdater.newUpdater(StrictVolatileSubscriber.class, Subscription.class, "upstream");
-    
+
     protected volatile long requested;
     @SuppressWarnings("rawtypes")
     protected static final AtomicLongFieldUpdater<StrictVolatileSubscriber> REQUESTED =
             AtomicLongFieldUpdater.newUpdater(StrictVolatileSubscriber.class, "requested");
-    
+
     protected volatile long wip;
     @SuppressWarnings("rawtypes")
     protected static final AtomicLongFieldUpdater<StrictVolatileSubscriber> WIP =
             AtomicLongFieldUpdater.newUpdater(StrictVolatileSubscriber.class, "wip");
-    
+
     protected volatile Throwable error;
     @SuppressWarnings("rawtypes")
     static final AtomicReferenceFieldUpdater<StrictVolatileSubscriber, Throwable> ERROR =
@@ -53,36 +53,42 @@ public class StrictVolatileSubscriber<T> implements RelaxedSubscriber<T>, Subscr
     @Override
     public void onNext(T t) {
         // TODO Auto-generated method stub
-        
     }
 
     @Override
     public void onError(Throwable t) {
         // TODO Auto-generated method stub
-        
     }
 
     @Override
     public void onComplete() {
         // TODO Auto-generated method stub
-        
     }
 
     @Override
     public void request(long n) {
         // TODO Auto-generated method stub
-        
     }
 
     @Override
     public void cancel() {
         // TODO Auto-generated method stub
-        
     }
 
     @Override
     public void onSubscribe(Subscription s) {
         // TODO Auto-generated method stub
-        
+    }
+
+    protected void undeliverableException(Throwable error) {
+        // default is no-op
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> RelaxedSubscriber<T> wrap(Subscriber<? super T> subscriber) {
+        if (subscriber instanceof RelaxedSubscriber) {
+            return (RelaxedSubscriber<T>)subscriber;
+        }
+        return new StrictAtomicSubscriber<T>(subscriber);
     }
 }

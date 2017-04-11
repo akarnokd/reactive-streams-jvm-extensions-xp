@@ -25,13 +25,13 @@ import hu.akarnokd.reactivestreams.extensions.RelaxedSubscriber;
 public class StrictAtomicSubscriber<T> implements RelaxedSubscriber<T>, Subscription {
 
     protected final Subscriber<? super T> actual;
-    
+
     protected final AtomicReference<Subscription> upstream;
-    
+
     protected final AtomicLong requested;
-    
+
     protected final AtomicLong wip;
-    
+
     protected final AtomicReference<Throwable> error;
 
     public StrictAtomicSubscriber(Subscriber<? super T> actual) {
@@ -44,37 +44,67 @@ public class StrictAtomicSubscriber<T> implements RelaxedSubscriber<T>, Subscrip
 
     @Override
     public void onNext(T t) {
-        // TODO Auto-generated method stub
-        
+        SubscriptionHelper.serializedOnNext(actual, wip, error, t);
     }
 
     @Override
     public void onError(Throwable t) {
-        // TODO Auto-generated method stub
-        
+        SubscriptionHelper.clear(upstream);
+        if (!SubscriptionHelper.serializedOnError(actual, wip, error, t)) {
+            undeliverableException(t);
+        }
     }
 
     @Override
     public void onComplete() {
-        // TODO Auto-generated method stub
-        
+        SubscriptionHelper.clear(upstream);
+        SubscriptionHelper.serializedOnComplete(actual, wip, error);
     }
 
     @Override
     public void request(long n) {
-        // TODO Auto-generated method stub
-        
+        if (n <= 0L) {
+            onError(new IllegalArgumentException("§3.9 violated: positive request amount required but it was " + n));
+        } else {
+            SubscriptionHelper.deferredRequest(upstream, requested, n);
+        }
     }
 
     @Override
     public void cancel() {
-        // TODO Auto-generated method stub
-        
+        SubscriptionHelper.cancel(upstream);
     }
 
     @Override
     public void onSubscribe(Subscription s) {
-        // TODO Auto-generated method stub
-        
+        if (s == null) {
+            throw new NullPointerException("s is null");
+        }
+        if (upstream.compareAndSet(null, s)) {
+
+            actual.onSubscribe(this);
+
+            long r = requested.getAndSet(0L);
+            if (r != 0L) {
+                s.request(r);
+            }
+        } else {
+            if (!SubscriptionHelper.isCancelled(upstream)) {
+                cancel();
+                onError(new IllegalStateException("Subscription already set!"));
+            }
+        }
+    }
+
+    protected void undeliverableException(Throwable error) {
+        // default is no-op
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> RelaxedSubscriber<T> wrap(Subscriber<? super T> subscriber) {
+        if (subscriber instanceof RelaxedSubscriber) {
+            return (RelaxedSubscriber<T>)subscriber;
+        }
+        return new StrictAtomicSubscriber<T>(subscriber);
     }
 }

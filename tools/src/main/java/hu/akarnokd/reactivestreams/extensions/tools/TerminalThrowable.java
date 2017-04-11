@@ -16,24 +16,16 @@
 
 package hu.akarnokd.reactivestreams.extensions.tools;
 
-import java.lang.reflect.*;
+final class TerminalThrowable extends Throwable {
 
-import org.junit.*;
+    private static final long serialVersionUID = -1563001250224932688L;
 
-public class SubscriptionHelperTest {
+    TerminalThrowable() {
+        super("Sequence already terminated. This Throwable should not be emitted via onError!");
+    }
 
-    @Test
-    public void noInstances() throws Exception {
-        Constructor<SubscriptionHelper> c = SubscriptionHelper.class.getDeclaredConstructor();
-
-        c.setAccessible(true);
-
-        try {
-            c.newInstance();
-            Assert.fail("Should have thrown!");
-        } catch (InvocationTargetException ex) {
-            Assert.assertTrue(ex.toString(), ex.getCause() instanceof IllegalStateException);
-            Assert.assertEquals(ex.toString(), "No instances!", ex.getCause().getMessage());
-        }
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this;
     }
 }

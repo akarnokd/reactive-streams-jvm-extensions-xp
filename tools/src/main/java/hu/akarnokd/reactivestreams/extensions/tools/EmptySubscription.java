@@ -58,7 +58,6 @@ public enum EmptySubscription implements FusedQueueSubscription<Object> {
     public int requestFusion(int mode) {
         return ASYNC;
     }
-    
 
     public static <T> void error(Subscriber<? super T> subscriber, Throwable error) {
         subscriber.onSubscribe(INSTANCE);
