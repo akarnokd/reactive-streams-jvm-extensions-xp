@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package hu.akarnokd.reactivestreams.extensions.tck;
+package hu.akarnokd.reactivestreams.extensions;
 
-import org.reactivestreams.*;
+import org.reactivestreams.Publisher;
 
-public abstract class ConstantPublisherVerification<T> {
-    
-    public abstract Publisher<T> createPublisher();
-    
-    public Publisher<T> createErrorPublisher() {
-        return null;
-    }
+public interface DynamicValuePublisher<T> extends Publisher<T> {
+
+    T value() throws Throwable;
+
 }

@@ -16,6 +16,25 @@
 
 package hu.akarnokd.reactivestreams.extensions.tck;
 
-public class ConstantPublisherVerificationTest {
-    
+import org.testng.annotations.Test;
+
+import hu.akarnokd.reactivestreams.extensions.ConstantValuePublisher;
+
+public abstract class ConstantValuePublisherVerification<T> {
+
+    public abstract ConstantValuePublisher<T> createPublisher();
+
+    public int expectedNumberOfValues() {
+        return -1;
+    }
+
+    @Test
+    public void validateExpectedNumberOfValues() {
+        VerificationHelper.validateExpectedNumberOfValues(expectedNumberOfValues());
+    }
+
+    @Test
+    public void requiredPublisherValueWorks() {
+        VerificationHelper.requiredPublisherValueWorks(createPublisher(), expectedNumberOfValues());
+    }
 }
