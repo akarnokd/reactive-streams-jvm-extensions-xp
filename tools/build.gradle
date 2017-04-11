@@ -1,0 +1,6 @@
+description = "tools"
+dependencies {
+    compile project(':reactive-streams-jvm-extensions-xp-api')
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
