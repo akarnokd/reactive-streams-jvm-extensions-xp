@@ -1,0 +1,7 @@
+description = 'examples'
+dependencies {
+    compile project(':reactive-streams-jvm-extensions-xp-api')
+    compile project(':reactive-streams-jvm-extensions-xp-tools')
+    testCompile group: 'org.testng', name: 'testng', version:'6.11'
+    testCompile 'org.reactivestreams:reactive-streams-tck:1.0.0'
+}
