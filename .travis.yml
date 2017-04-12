@@ -4,7 +4,7 @@ jdk:
   - oraclejdk7
   - oraclejdk8
 
-// script will call assemble
+# script will call assemble
 install: true
 
 before_install:
