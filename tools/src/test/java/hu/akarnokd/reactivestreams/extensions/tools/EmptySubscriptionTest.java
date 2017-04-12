@@ -49,11 +49,11 @@ public class EmptySubscriptionTest {
     public void empty() throws Throwable {
         Assert.assertNull(EmptySubscription.INSTANCE.poll());
         Assert.assertTrue(EmptySubscription.INSTANCE.isEmpty());
-        
-        Assert.assertEquals(FusedQueueSubscription.ASYNC, 
+
+        Assert.assertEquals(FusedQueueSubscription.ASYNC,
                 EmptySubscription.INSTANCE.requestFusion(FusedQueueSubscription.ANY));
 
-        Assert.assertEquals(FusedQueueSubscription.NONE, 
+        Assert.assertEquals(FusedQueueSubscription.NONE,
                 EmptySubscription.INSTANCE.requestFusion(FusedQueueSubscription.SYNC));
 
         EmptySubscription.INSTANCE.clear();
@@ -63,7 +63,9 @@ public class EmptySubscriptionTest {
         EmptySubscription.INSTANCE.request(0);
 
         EmptySubscription.INSTANCE.request(1);
-        
+
+        EmptySubscription.INSTANCE.cancel();
+
         Assert.assertEquals("EmptySubscription", EmptySubscription.INSTANCE.toString());
     }
 
@@ -73,7 +75,7 @@ public class EmptySubscriptionTest {
         final Throwable[] error = { null };
         final int[] onNext = { 0 };
         final int[] onComplete = { 0 };
-        
+
         EmptySubscription.error(new Subscriber<Object>() {
 
             @Override
@@ -95,7 +97,6 @@ public class EmptySubscriptionTest {
             public void onComplete() {
                 onComplete[0]++;
             }
-            
         }, new IOException());
 
         Assert.assertEquals(EmptySubscription.INSTANCE, sub[0]);
@@ -110,7 +111,7 @@ public class EmptySubscriptionTest {
         final Throwable[] error = { null };
         final int[] onNext = { 0 };
         final int[] onComplete = { 0 };
-        
+
         EmptySubscription.complete(new Subscriber<Object>() {
 
             @Override
@@ -132,7 +133,6 @@ public class EmptySubscriptionTest {
             public void onComplete() {
                 onComplete[0]++;
             }
-            
         });
 
         Assert.assertEquals(EmptySubscription.INSTANCE, sub[0]);

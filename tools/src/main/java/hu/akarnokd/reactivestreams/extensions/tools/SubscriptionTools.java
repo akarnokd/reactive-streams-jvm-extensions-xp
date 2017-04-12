@@ -42,8 +42,9 @@ public final class SubscriptionTools {
     /**
      * Adds two non-negative long values and caps the result at {@code Long.MAX_VALUE}.
      * @param a the first value, non-negative (not verified)
-     * @param b the second value, non-negative (not verified) 
+     * @param b the second value, non-negative (not verified)
      * @return the sum of the two values capped at {@code Long.MAX_VALUE}
+     * @see #multiplyCap(long, long)
      */
     public static long addAndCap(long a, long b) {
         long c = a + b;
@@ -53,8 +54,9 @@ public final class SubscriptionTools {
     /**
      * Multiplies two non-negative long values and caps the result at {@code Long.MAX_VALUE}.
      * @param a the first value, non-negative (not verified)
-     * @param b the second value, non-negative (not verified) 
+     * @param b the second value, non-negative (not verified)
      * @return the product of the two values capped at {@code Long.MAX_VALUE}
+     * @see #addAndCap(long, long)
      */
     public static long multiplyCap(long a, long b) {
         long u = a * b;
@@ -66,17 +68,37 @@ public final class SubscriptionTools {
         return u;
     }
 
+    /**
+     * Checks if the given error instance is the shared terminal-indicator Throwable instance.
+     * @param error the error to check
+     * @return true if the Throwable instance is the terminated instance
+     * @see #isTerminalThrowable(AtomicReference)
+     * @see #isTerminalThrowable(Object, AtomicReferenceFieldUpdater)
+     */
     public static boolean isTerminalThrowable(Throwable error) {
         return error == TERMINATED;
     }
 
+    /**
+     * Checks if the given Subscription is the shared cancelled-indicator Subscription instance.
+     * @param subscription the subscription to check
+     * @return true if the subscription instanceis the cancelled instance
+     * @see #isCancelled(AtomicReference)
+     * @see #isCancelled(Object, AtomicReferenceFieldUpdater)
+     */
     public static boolean isCancelled(Subscription subscription) {
         return subscription == CancelledSubscription.INSTANCE;
     }
 
+    /**
+     * The result from calling {@code setOnce}.
+     */
     public enum SetOnceResult {
+        /** The new Subscription was successfully set. */
         SUCCESS,
+        /** Some other Subscription was already set. */
         ALREADY_SET,
+        /** The target was alreday cancelled. */
         CANCELLED
     }
 
@@ -84,6 +106,24 @@ public final class SubscriptionTools {
     // Atomic classes versions
     ///////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * Atomically swaps in the shared cancelled Subscription instance
+     * and cancels the previous Subscription in the field if there
+     * was any.
+     * <p>
+     * This operation makes sure that any subsequent {@code setOnce},
+     * {@code replace}, {@code update} gets its Subscription cancelled.
+     * <p>
+     * Sometimes, this is called deferred cancellation because if
+     * the actual Subscription is in time or late, in both cases it
+     * will be cancelled eventually.
+     * @param field the target field to cancel the contents
+     * @return true if the current thread successfully cancelled the
+     * contents.
+     * @see #update(AtomicReference, Subscription)
+     * @see #replace(AtomicReference, Subscription)
+     * @see #setOnce(AtomicReference, Subscription)
+     */
     public static boolean cancel(AtomicReference<Subscription> field) {
         Subscription current = field.get();
         if (current != CancelledSubscription.INSTANCE) {
@@ -98,14 +138,35 @@ public final class SubscriptionTools {
         return false;
     }
 
+    /**
+     * Sets the shared cancelled-indicator on the target AtomicReference field
+     * in an via lazySet; any previous value is simply overwritten.
+     * @param field the target AtomicReference field, not null
+     * @see #cancel(AtomicReference)
+     */
     public static void clear(AtomicReference<Subscription> field) {
         field.lazySet(CancelledSubscription.INSTANCE);
     }
 
+    /**
+     * Returns true if the target AtomicReference contains the shared
+     * cancelled-indicator Subscription instance.
+     * @param field the target AtomicReference, not null
+     * @return true if the target contains the cancelled instance
+     */
     public static boolean isCancelled(AtomicReference<Subscription> field) {
         return field.get() == CancelledSubscription.INSTANCE;
     }
 
+    /**
+     * Atomically replaces the Subscription in the AtomicReference with the provided
+     * value or cancels this value if the field contains the shared cancelled-indicator
+     * instance.
+     * @param field the target AtomicReference field, not null
+     * @param next the Subscription to replace the current contents, may be null
+     * @return true if the replacement succeeded, false if the field contains the
+     * cancelled-indicator
+     */
     public static boolean replace(AtomicReference<Subscription> field, Subscription next) {
         for (;;) {
             Subscription current = field.get();
@@ -121,6 +182,15 @@ public final class SubscriptionTools {
         }
     }
 
+    /**
+     * Atomically updates the Subscription in the AtomicReference with the provided
+     * value and cancels the previous Subscription (if not null) or cancels this
+     * value if the field contains the shared cancelled-indicator instance.
+     * @param field the target AtomicReference field, not null
+     * @param next the Subscription to replace the current contents, may be null
+     * @return true if the replacement succeeded, false if the field contains the
+     * cancelled-indicator
+     */
     public static boolean update(AtomicReference<Subscription> field, Subscription next) {
         for (;;) {
             Subscription current = field.get();
@@ -139,6 +209,15 @@ public final class SubscriptionTools {
         }
     }
 
+    /**
+     * Atomically sets the only non-null Subscription on the target AtomicReference if
+     * it is null, otherwise cancels the Subscription and returns the
+     * result of the operation (success, already set, cancelled).
+     * @param field the target AtomicReferfence field
+     * @param subscription the Subscription to set, not null
+     * @return the result of the operation: success, already set, cancelled
+     * @throws NullPointerException if {@code subscription} is null
+     */
     public static SetOnceResult setOnce(AtomicReference<Subscription> field, Subscription subscription) {
         if (subscription == null) {
             throw new NullPointerException("subscription is null");
@@ -153,6 +232,22 @@ public final class SubscriptionTools {
         return SetOnceResult.SUCCESS;
     }
 
+    /**
+     * Atomically sets the only non-null Subscription on the target AtomicReference if
+     * it is null then atomically replaces the value in the requested AtomicLong and
+     * if it it was non-zero, requests that amount from the subscription;
+     * otherwise cancels the Subscription and returns the
+     * result of the operation (success, already set, cancelled).
+     * <p>
+     * This method is useful when the upstream Subscription may appear
+     * later than any potential request from the downstream and
+     * the two have to catch up with each other eventually.
+     * @param field the target AtomicReferfence field
+     * @param requested the AtomicLong field containing the accumulated requested amount
+     * @param subscription the Subscription to set, not null
+     * @return the result of the operation: success, already set, cancelled
+     * @see #deferredRequest(AtomicReference, AtomicLong, long)
+     */
     public static SetOnceResult deferredSetOnce(AtomicReference<Subscription> field, AtomicLong requested, Subscription subscription) {
         if (subscription == null) {
             throw new NullPointerException("subscription is null");
