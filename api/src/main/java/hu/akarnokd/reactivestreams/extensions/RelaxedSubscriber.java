@@ -18,6 +18,15 @@ package hu.akarnokd.reactivestreams.extensions;
 
 import org.reactivestreams.*;
 
+/**
+ * An extension to the {@link Subscriber} interface by relaxing some of the
+ * (textual) rules of {@code Subscriber}, otherwise it has the same four methods.
+ * <p>
+ * The rule relaxations are as follows:
+ * <ul>
+ * </ul>
+ * @param <T> the value type
+ */
 public interface RelaxedSubscriber<T> extends Subscriber<T> {
 
     @Override

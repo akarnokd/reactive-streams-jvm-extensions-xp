@@ -24,7 +24,7 @@ public class SubscriptionHelperTest {
 
     @Test
     public void noInstances() throws Exception {
-        Constructor<SubscriptionHelper> c = SubscriptionHelper.class.getDeclaredConstructor();
+        Constructor<SubscriptionTools> c = SubscriptionTools.class.getDeclaredConstructor();
 
         c.setAccessible(true);
 

@@ -22,19 +22,40 @@ import org.reactivestreams.*;
 
 import hu.akarnokd.reactivestreams.extensions.ConditionalSubscriber;
 
-public final class SubscriptionHelper {
+/**
+ * Utility class supporting atomic operations with {@link Subscription}s,
+ * {@link Throwable}s and {@link Subscriber}s.
+ */
+public final class SubscriptionTools {
 
-    private SubscriptionHelper() {
+    /** Utility class. */
+    private SubscriptionTools() {
         throw new IllegalStateException("No instances!");
     }
 
+    /**
+     * The shared terminal indicator for Throwable atomics; should not be emitted
+     * via a {@code Subscriber.onError()} as it is meant for an indicator.
+     */
     static final TerminalThrowable TERMINATED = new TerminalThrowable();
 
+    /**
+     * Adds two non-negative long values and caps the result at {@code Long.MAX_VALUE}.
+     * @param a the first value, non-negative (not verified)
+     * @param b the second value, non-negative (not verified) 
+     * @return the sum of the two values capped at {@code Long.MAX_VALUE}
+     */
     public static long addAndCap(long a, long b) {
         long c = a + b;
         return c < 0 ? Long.MAX_VALUE : c;
     }
 
+    /**
+     * Multiplies two non-negative long values and caps the result at {@code Long.MAX_VALUE}.
+     * @param a the first value, non-negative (not verified)
+     * @param b the second value, non-negative (not verified) 
+     * @return the product of the two values capped at {@code Long.MAX_VALUE}
+     */
     public static long multiplyCap(long a, long b) {
         long u = a * b;
         if (((a | b) >>> 31) != 0) {

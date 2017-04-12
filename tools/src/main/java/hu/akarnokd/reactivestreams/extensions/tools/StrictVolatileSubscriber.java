@@ -57,21 +57,21 @@ public class StrictVolatileSubscriber<T> implements RelaxedSubscriber<T>, Subscr
 
     @Override
     public void onNext(T t) {
-        SubscriptionHelper.serializedOnNext(actual, this, WIP, ERROR, t);
+        SubscriptionTools.serializedOnNext(actual, this, WIP, ERROR, t);
     }
 
     @Override
     public void onError(Throwable t) {
-        SubscriptionHelper.clear(this, UPSTREAM);
-        if (!SubscriptionHelper.serializedOnError(actual, this, WIP, ERROR, t)) {
+        SubscriptionTools.clear(this, UPSTREAM);
+        if (!SubscriptionTools.serializedOnError(actual, this, WIP, ERROR, t)) {
             undeliverableException(t);
         }
     }
 
     @Override
     public void onComplete() {
-        SubscriptionHelper.clear(this, UPSTREAM);
-        SubscriptionHelper.serializedOnComplete(actual, this, WIP, ERROR);
+        SubscriptionTools.clear(this, UPSTREAM);
+        SubscriptionTools.serializedOnComplete(actual, this, WIP, ERROR);
     }
 
     @Override
@@ -79,13 +79,13 @@ public class StrictVolatileSubscriber<T> implements RelaxedSubscriber<T>, Subscr
         if (n <= 0L) {
             onError(new IllegalArgumentException("§3.9 violated: positive request amount required but it was " + n));
         } else {
-            SubscriptionHelper.deferredRequest(this, UPSTREAM, REQUESTED, n);
+            SubscriptionTools.deferredRequest(this, UPSTREAM, REQUESTED, n);
         }
     }
 
     @Override
     public void cancel() {
-        SubscriptionHelper.cancel(this, UPSTREAM);
+        SubscriptionTools.cancel(this, UPSTREAM);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class StrictVolatileSubscriber<T> implements RelaxedSubscriber<T>, Subscr
                 s.request(r);
             }
         } else {
-            if (!SubscriptionHelper.isCancelled(upstream)) {
+            if (!SubscriptionTools.isCancelled(upstream)) {
                 cancel();
                 onError(new IllegalStateException("Subscription already set!"));
             }

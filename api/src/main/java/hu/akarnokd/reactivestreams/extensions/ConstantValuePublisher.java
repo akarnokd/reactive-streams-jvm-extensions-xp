@@ -16,8 +16,23 @@
 
 package hu.akarnokd.reactivestreams.extensions;
 
+import org.reactivestreams.Publisher;
+
+/**
+ * Represents a {@link Publisher} source that can return a constant zero or one
+ * value synchronously via {@link #value()}.
+ * <p>
+ * This {@code Publisher} adds restriction to the {@link DynamicValuePublisher}
+ * that the {@link #value()} can't throw and should return a constant or
+ * is allowed perform computation during assembly time.
+ *
+ * @param <T> the value type
+ */
 public interface ConstantValuePublisher<T> extends DynamicValuePublisher<T> {
 
+    /**
+     * Returns a single value or null indicating emptiness.
+     */
     @Override
     T value();
 }

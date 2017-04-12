@@ -16,6 +16,10 @@
 
 package hu.akarnokd.reactivestreams.extensions.tools;
 
+/**
+ * A stackless Throwable that is used for indicating a terminal state within
+ * an atomic Throwable error container (field or AtomicReference).
+ */
 final class TerminalThrowable extends Throwable {
 
     private static final long serialVersionUID = -1563001250224932688L;
