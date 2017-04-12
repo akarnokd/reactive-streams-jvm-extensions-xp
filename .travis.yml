@@ -14,7 +14,7 @@ before_install:
 script:
   - ./gradlew assemble
   - ./gradlew test --info
-  - cat /home/travis/build/akarnokd/reactive-streams-jvm-extensions-xp/tck/build/reports/tests/index.html
+  - cat /home/travis/build/akarnokd/reactive-streams-jvm-extensions-xp/tck/build/reports/tests/classes/*.html
   - ./gradlew check jacocoFullReport --stacktrace
 
 after_success:
