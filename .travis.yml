@@ -2,7 +2,8 @@ language: java
 
 jdk:
   - oraclejdk7
-  - oraclejdk8
+# for now
+#  - oraclejdk8
 
 # script will call assemble
 install: true
