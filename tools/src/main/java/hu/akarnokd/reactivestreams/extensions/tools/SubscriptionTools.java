@@ -267,6 +267,19 @@ public final class SubscriptionTools {
         return SetOnceResult.SUCCESS;
     }
 
+    /**
+     * Requests the specified amount from the Subscription inside the AtomicReference field or
+     * stores the amount in the requested AtomicLong till the Subscription arrives.
+     * <p>
+     * This is the pair of the {@link #deferredSetOnce(AtomicReference, AtomicLong, Subscription)} method,
+     * having both ensures that if the request amount comes before the Subscription arrives, the
+     * request amount is accumulated and then requested from upstream once possible.
+     * @param field the target AtomicReferfence field
+     * @param requested the AtomicLong field containing the accumulated requested amount
+     * @param n the request amount, positive (not validated)
+     * @return true if direct requesting was possible, false if the request was accumulated in the requested AtomicLong
+     * @see #deferredSetOnce(AtomicReference, AtomicLong, Subscription)
+     */
     public static boolean deferredRequest(AtomicReference<Subscription> field, AtomicLong requested, long n) {
         Subscription current = field.get();
         if (current != null) {
@@ -285,6 +298,14 @@ public final class SubscriptionTools {
         return false;
     }
 
+    /**
+     * Atomically adds the given amount to the requested AtomicLong, capped at
+     * Long.MAX_VALUE, if the current value is not Long.MAX_VALUE already,
+     * and returns the original value before the addition.
+     * @param requested the target requested AtomicLong
+     * @param n the number to add, positive (not validated)
+     * @return the original value before the addition
+     */
     public static long getAndAddRequested(AtomicLong requested, long n) {
         for (;;) {
             long r = requested.get();
@@ -298,6 +319,15 @@ public final class SubscriptionTools {
         }
     }
 
+    /**
+     * Atomically subtracts the given amount from the requested AtomicLong, if the current
+     * value is not Long.MAX_VALUE, and returns the new value after.
+     * @param requested the target requested AtomicLong
+     * @param n the number to subtract, positive (not validated)
+     * @return the new value after the subtraction
+     * @throws IllegalArgumentException if n is larger than the amount in the AtomicLong
+     * @see #getAndAddRequested(AtomicLong, long)
+     */
     public static long subtractAndGetRequested(AtomicLong requested, long n) {
         for (;;) {
             long r = requested.get();
@@ -306,7 +336,7 @@ public final class SubscriptionTools {
             }
             long u = r - n;
             if (u < 0L) {
-                throw new IllegalStateException("Can't have negative requested amount: " + u);
+                throw new IllegalArgumentException("Can't have negative requested amount: " + u);
             }
             if (requested.compareAndSet(r, u)) {
                 return u;
@@ -314,10 +344,34 @@ public final class SubscriptionTools {
         }
     }
 
+    /**
+     * Checks if the given AtomicReference contains the shared terminal-indicator Throwable instance.
+     * @param error the target AtomicReference to check
+     * @return true if the target contains the terminal-indicator instance
+     */
     public static boolean isTerminalThrowable(AtomicReference<Throwable> error) {
         return error.get() == TERMINATED;
     }
 
+    /**
+     * Atomically calls onNext on the given subscriber if there was no concurrent serialized call from the
+     * other similar methods.
+     * <p>
+     * The aim is to serialize a single thread emitting onNext items with any other thread(s) calling
+     * {@link #serializedOnError(Subscriber, AtomicLong, AtomicReference, Throwable)} or
+     * {@link #serializedOnComplete(Subscriber, AtomicLong, AtomicReference)} methods by making sure once
+     * the onNext item was emitted, any terminal signal is also emitted immediately.
+     * @param <T> the value type
+     * @param subscriber the target subscriber receiving signals in a serialized manner.
+     * @param wip the work-in-progress indicator when an onNext call is being emitted.
+     * @param error the error AtomicReference temporarily holding the error or terminal signal
+     * @param item the item to emit via onNext
+     * @return true if the emission succeeded, false if an async terminal event was first emitted to
+     * the subscriber
+     * @see #serializedOnError(Subscriber, AtomicLong, AtomicReference, Throwable)
+     * @see #serializedOnComplete(Subscriber, AtomicLong, AtomicReference)
+     * @see #serializedTryOnNext(ConditionalSubscriber, AtomicLong, AtomicReference, Object)
+     */
     public static <T> boolean serializedOnNext(Subscriber<? super T> subscriber, AtomicLong wip, AtomicReference<Throwable> error, T item) {
         if (wip.get() == 0L && wip.compareAndSet(0, 1)) {
             subscriber.onNext(item);
@@ -334,6 +388,24 @@ public final class SubscriptionTools {
         return false;
     }
 
+    /**
+     * Atomically calls tryOnNext on the given conditional subscriber if there was no concurrent serialized call from the
+     * other similar methods.
+     * <p>
+     * The aim is to serialize a single thread emitting tryOnNext items with any other thread(s) calling
+     * {@link #serializedOnError(Subscriber, AtomicLong, AtomicReference, Throwable)} or
+     * {@link #serializedOnComplete(Subscriber, AtomicLong, AtomicReference)} methods by making sure once
+     * the tryOnNext item was emitted, any terminal signal is also emitted immediately.
+     * @param <T> the value type
+     * @param subscriber the target subscriber receiving signals in a serialized manner.
+     * @param wip the work-in-progress indicator when an onNext call is being emitted.
+     * @param error the error AtomicReference temporarily holding the error or terminal signal
+     * @param item the item to emit via onNext
+     * @return true if both the emission and the returned value of tryOnNext is true
+     * (successful consumption), false otherwise (failed consumption or terminal event already emitted)
+     * @see #serializedOnError(Subscriber, AtomicLong, AtomicReference, Throwable)
+     * @see #serializedOnComplete(Subscriber, AtomicLong, AtomicReference)
+     */
     public static <T> boolean serializedTryOnNext(ConditionalSubscriber<? super T> subscriber, AtomicLong wip, AtomicReference<Throwable> error, T item) {
         if (wip.get() == 0L && wip.compareAndSet(0, 1)) {
             boolean b = subscriber.tryOnNext(item);
@@ -350,6 +422,21 @@ public final class SubscriptionTools {
         return false;
     }
 
+    /**
+     * Atomically calls onError on the target subscriber if there is no ongoing onNext or tryOnNext emissions,
+     * otherwise stores the error Throwable, if the target error AtomicReference is empty, so the onNext can
+     * pick it up once its emission completes.
+     * @param <T> the value type
+     * @param subscriber the target subscriber receiving signals in a serialized manner.
+     * @param wip the work-in-progress indicator when an onNext call is being emitted.
+     * @param error the error AtomicReference temporarily holding the error or terminal signal
+     * @param t the Throwable instance to emit or store for later emission
+     * @return true if the Throwable error was emitted immediately or was successfully stored in the error AtomicReference,
+     * false if there was a terminal indicator in the error AtomicReference already
+     * @see #serializedOnComplete(Subscriber, AtomicLong, AtomicReference)
+     * @see #serializedOnNext(Subscriber, AtomicLong, AtomicReference, Object)
+     * @see #serializedTryOnNext(ConditionalSubscriber, AtomicLong, AtomicReference, Object)
+     */
     public static <T> boolean serializedOnError(Subscriber<? super T> subscriber, AtomicLong wip, AtomicReference<Throwable> error, Throwable t) {
         if (error.compareAndSet(null, t)) {
             if (wip.getAndIncrement() == 0) {
@@ -360,6 +447,20 @@ public final class SubscriptionTools {
         return false;
     }
 
+    /**
+     * Atomically calls onComplete on the target subscriber if there is no ongoing onNext or tryOnNext emissions,
+     * otherwise stores a completion indicator in the error AtomicReference, if the target error AtomicReference is
+     * empty, so the onNext can pick it up once its emission completes.
+     * @param <T> the value type
+     * @param subscriber the target subscriber receiving signals in a serialized manner.
+     * @param wip the work-in-progress indicator when an onNext call is being emitted.
+     * @param error the error AtomicReference temporarily holding the error or terminal signal
+     * @return true if the onComplete was successfully emitted or its indicator successfully stored in the error AtomicReference,
+     * false if there was a terminal indicator in the error AtomicReference already
+     * @see #serializedOnNext(Subscriber, AtomicLong, AtomicReference, Object)
+     * @see #serializedTryOnNext(ConditionalSubscriber, AtomicLong, AtomicReference, Object)
+     * @see #serializedOnError(Subscriber, AtomicLong, AtomicReference, Throwable)
+     */
     public static <T> boolean serializedOnComplete(Subscriber<? super T> subscriber, AtomicLong wip, AtomicReference<Throwable> error) {
         if (error.compareAndSet(null, TERMINATED)) {
             if (wip.getAndIncrement() == 0) {
@@ -501,7 +602,7 @@ public final class SubscriptionTools {
             }
             long u = r - n;
             if (u < 0L) {
-                throw new IllegalStateException("Can't have negative requested amount: " + u);
+                throw new IllegalArgumentException("Can't have negative requested amount: " + u);
             }
             if (requested.compareAndSet(instance, r, u)) {
                 return u;
