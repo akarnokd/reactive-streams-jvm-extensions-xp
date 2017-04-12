@@ -35,20 +35,19 @@ import org.reactivestreams.*;
  * {@link #ASYNC} and the latter two optionally binary-or'd with {@link #BOUNDARY}).
  * <p>
  * The standard {@code Publisher} protocol is extended as follows:
- * <p>
- * <code><pre>
+ * <pre><code>
  *             /-&gt; requestFusion == NONE  -&gt; onNext(T)*    (onError | onComplete)?
  * onSubscribe |-&gt; requestFusion == SYNC
  *             \-&gt; requestFusion == ASYNC -&gt; onNext(null)* (onError | onComplete)?
- * </pre></code>
+ * </code></pre>
  * The standard {@code Subscriber} changes to the following in an established fusion mode:
- * <code><pre>
+ * <pre><code>
  * requestFusion == SYNC  -&gt; (poll | isEmpty)* clear?
  * requestFusion == ASYNC -&gt; (request | poll | isEmpty)* clear?
- * </pre></code>
+ * </code></pre>
  * The {@code requestFusion()} method should be called from within the {@code onSubscribe()} method
  * and before any issue of {@code Subscription.request()}. Calling {@code requestFusion()}
- * multiple times, after a {@code request()} call or from within any other {&code onXXX} methods
+ * multiple times, after a {@code request()} call or from within any other {@code onXXX} methods
  * is undefined behavior.
  * <p>
  * The methods {@link #poll()}, {@link #isEmpty()} and {@link #clear()} should be called in a sequential
@@ -56,7 +55,7 @@ import org.reactivestreams.*;
  * <p>
  * The method {@link #offer(Object)} should not be called when a fusion mode is established
  * (otherwise it is undefined behavior).
- * <p>
+ *
  * <h3>Synchronous fusion (<code>requestFusion(SYNC)</code>)</h3>
  * The upstream is able to produce items in a synchronous fashion and
  * return them via {@link FusedQueue#poll()}, then indicating a terminal state via returning
@@ -68,6 +67,7 @@ import org.reactivestreams.*;
  * Items should be consumed via {@link #poll()}, errors should be reported by throwing from
  * {@code poll} and the source is considered done when {@code poll()} returns null or
  * {@code isEmpty()} is true.
+ *
  * <h3>Asynchronous fusion (<code>requestFusion(ASYNC)</code>)</h3>
  * The upstream is able to produce items in an asynchronous fashion, that is,
  * {@link #poll()} may return null if there is no item available currently from upstream.
@@ -78,13 +78,14 @@ import org.reactivestreams.*;
  * In addition, the upstream should still call {@code onError} if an error occurs and
  * indicate completion via {@code onComplete}. The downstream should still call 
  * {@code Subscription.request()} to indicate demand.
+ *
  * <h3>Boundary fusion (<code>requestFusion(ANY | BOUNDARY)</code>)</h3>
  * The downstream is an explicit asynchronous boundary and certain
  * upstream sources may chose not to fuse in this case.
  * <p>
  * The fusion is usually established by appending processing logic to the {@link #poll()}
  * side of the queue, for example, mapping an upstream value polled from an upstream queue:
- * <code><pre>
+ * <pre><code>
  * &#64;Override
  * public R poll() throws Throwable {
  *     T value = upstream.poll();
@@ -93,11 +94,10 @@ import org.reactivestreams.*;
  *     }
  *     return null;
  * }
- * </pre></code>
+ * </code></pre>
  * With an explicit boundary, the computation in {@code mapper.apply()} may happen on the other
  * side of the boundary on a thread not necessary desired by the function (for example,
  * a blocking network call that would end up on the UI thread via a downstream {@code poll()}).
- * <p>
  * @param <T> the value type of the queue.
  */
 public interface FusedQueueSubscription<T> extends FusedQueue<T>, Subscription {
@@ -153,7 +153,7 @@ public interface FusedQueueSubscription<T> extends FusedQueue<T>, Subscription {
      * <p>
      * The fusion is usually established by appending processing logic to the {@link #poll()}
      * side of the queue, for example, mapping an upstream value polled from an upstream queue:
-     * <code><pre>
+     * <pre><code>
      * &#64;Override
      * public R poll() throws Throwable {
      *     T value = upstream.poll();
@@ -162,7 +162,7 @@ public interface FusedQueueSubscription<T> extends FusedQueue<T>, Subscription {
      *     }
      *     return null;
      * }
-     * </pre></code>
+     * </code></pre>
      * With an explicit boundary, the computation in {@code mapper.apply()} may happen on the other
      * side of the boundary on a thread not necessary desired by the function (for example,
      * a blocking network call that would end up on the UI thread via a downstream {@code poll()}).
@@ -174,7 +174,7 @@ public interface FusedQueueSubscription<T> extends FusedQueue<T>, Subscription {
      * <p>
      * The {@code requestFusion()} method should be called from within the {@code onSubscribe()} method
      * and before any issue of {@code Subscription.request()}. Calling {@code requestFusion()}
-     * multiple times, after a {@code request()} call or from within any other {&code onXXX} methods
+     * multiple times, after a {@code request()} call or from within any other {@code onXXX} methods
      * is undefined behavior.
      * <p>
      * Most consumers will likely call with {@link #ANY} or {@link #ANY} | {@link #BOUNDARY} because

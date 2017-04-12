@@ -42,7 +42,7 @@ public interface FusedQueue<T> {
      * <p>
      * Dequeueing from an in-memory source usually doesn't throw but due to fusion, functions may
      * get applied to the value in a queue-chain which functions may throw:
-     * <code><pre>
+     * <pre><code>
      * &#64;Override
      * public R poll() throws Throwable {
      *     T value = upstream.poll();
@@ -51,7 +51,7 @@ public interface FusedQueue<T> {
      *     }
      *     return null;
      * }
-     * </pre></code>
+     * </code></pre>
      * In this example, there is an upstream queue which if returns a value, a mapper function is
      * applied where the {@code apply()} may throw or the function may return an illegal null value.
      * By defining the method as {@code throws Throwable}, consumers are required to handle

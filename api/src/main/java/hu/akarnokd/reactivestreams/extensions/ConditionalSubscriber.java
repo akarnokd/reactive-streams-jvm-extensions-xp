@@ -24,14 +24,14 @@ package hu.akarnokd.reactivestreams.extensions;
  * When implementing {@code ConditionalSubscriber}s, one can define the regular
  * {@link #onNext(Object)} by delegating to {@link #tryOnNext(Object)} and
  * requesting if the method returned false:
- * <code><pre>
+ * <pre><code>
  * &#64;Override
  * public void onNext(T t) {
- *     if (!tryOnNext(t) && !done) {
+ *     if (!tryOnNext(t) &amp;&amp; !done) {
  *         upstream.request(1);
  *     }
  * }
- * </pre></code>
+ * </code></pre>
  * where {@code done} is a boolean field indicating the upstream was cancelled by {@code tryOnNext()}
  * and {@code upstream} holds the {@code Subscription} received via {@link #onSubscribe(org.reactivestreams.Subscription)}.
  *
