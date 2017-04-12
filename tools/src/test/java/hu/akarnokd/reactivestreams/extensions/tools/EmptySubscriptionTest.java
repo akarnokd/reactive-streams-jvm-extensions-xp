@@ -16,7 +16,12 @@
 
 package hu.akarnokd.reactivestreams.extensions.tools;
 
+import java.io.IOException;
+
 import org.junit.*;
+import org.reactivestreams.*;
+
+import hu.akarnokd.reactivestreams.extensions.FusedQueueSubscription;
 
 public class EmptySubscriptionTest {
 
@@ -35,13 +40,104 @@ public class EmptySubscriptionTest {
         Assert.assertArrayEquals(new EmptySubscription[] { EmptySubscription.INSTANCE }, EmptySubscription.values());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test(expected = InternalError.class)
     public void offer() {
         EmptySubscription.INSTANCE.offer(new Object());
     }
 
     @Test
-    public void empty() {
+    public void empty() throws Throwable {
+        Assert.assertNull(EmptySubscription.INSTANCE.poll());
+        Assert.assertTrue(EmptySubscription.INSTANCE.isEmpty());
         
+        Assert.assertEquals(FusedQueueSubscription.ASYNC, 
+                EmptySubscription.INSTANCE.requestFusion(FusedQueueSubscription.ANY));
+
+        Assert.assertEquals(FusedQueueSubscription.NONE, 
+                EmptySubscription.INSTANCE.requestFusion(FusedQueueSubscription.SYNC));
+
+        EmptySubscription.INSTANCE.clear();
+
+        EmptySubscription.INSTANCE.request(-1);
+
+        EmptySubscription.INSTANCE.request(0);
+
+        EmptySubscription.INSTANCE.request(1);
+        
+        Assert.assertEquals("EmptySubscription", EmptySubscription.INSTANCE.toString());
+    }
+
+    @Test
+    public void error() {
+        final Subscription[] sub = { null };
+        final Throwable[] error = { null };
+        final int[] onNext = { 0 };
+        final int[] onComplete = { 0 };
+        
+        EmptySubscription.error(new Subscriber<Object>() {
+
+            @Override
+            public void onSubscribe(Subscription s) {
+                sub[0] = s;
+            }
+
+            @Override
+            public void onNext(Object t) {
+                onNext[0]++;
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                error[0] = t;
+            }
+
+            @Override
+            public void onComplete() {
+                onComplete[0]++;
+            }
+            
+        }, new IOException());
+
+        Assert.assertEquals(EmptySubscription.INSTANCE, sub[0]);
+        Assert.assertEquals(0, onNext[0]);
+        Assert.assertEquals(0, onComplete[0]);
+        Assert.assertTrue("" + error[0], error[0] instanceof IOException);
+    }
+
+    @Test
+    public void complete() {
+        final Subscription[] sub = { null };
+        final Throwable[] error = { null };
+        final int[] onNext = { 0 };
+        final int[] onComplete = { 0 };
+        
+        EmptySubscription.complete(new Subscriber<Object>() {
+
+            @Override
+            public void onSubscribe(Subscription s) {
+                sub[0] = s;
+            }
+
+            @Override
+            public void onNext(Object t) {
+                onNext[0]++;
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                error[0] = t;
+            }
+
+            @Override
+            public void onComplete() {
+                onComplete[0]++;
+            }
+            
+        });
+
+        Assert.assertEquals(EmptySubscription.INSTANCE, sub[0]);
+        Assert.assertEquals(0, onNext[0]);
+        Assert.assertEquals(1, onComplete[0]);
+        Assert.assertNull(error[0]);
     }
 }

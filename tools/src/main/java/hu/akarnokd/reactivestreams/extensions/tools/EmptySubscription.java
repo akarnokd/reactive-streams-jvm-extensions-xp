@@ -56,7 +56,7 @@ public enum EmptySubscription implements FusedQueueSubscription<Object> {
 
     @Override
     public int requestFusion(int mode) {
-        return ASYNC;
+        return mode & ASYNC;
     }
 
     public static <T> void error(Subscriber<? super T> subscriber, Throwable error) {
