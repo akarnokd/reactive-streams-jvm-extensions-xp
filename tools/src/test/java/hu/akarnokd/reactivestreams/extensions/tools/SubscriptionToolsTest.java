@@ -20,11 +20,10 @@ import java.lang.reflect.*;
 
 import org.junit.*;
 
-public class SubscriptionHelperTest {
+public class SubscriptionToolsTest {
 
-    @Test
-    public void noInstances() throws Exception {
-        Constructor<SubscriptionTools> c = SubscriptionTools.class.getDeclaredConstructor();
+    static void utilityClass(Class<?> clazz) throws Exception {
+        Constructor<?> c = clazz.getDeclaredConstructor();
 
         c.setAccessible(true);
 
@@ -35,5 +34,10 @@ public class SubscriptionHelperTest {
             Assert.assertTrue(ex.toString(), ex.getCause() instanceof IllegalStateException);
             Assert.assertEquals(ex.toString(), "No instances!", ex.getCause().getMessage());
         }
+    }
+
+    @Test
+    public void noInstances() throws Exception {
+        utilityClass(SubscriptionTools.class);
     }
 }
