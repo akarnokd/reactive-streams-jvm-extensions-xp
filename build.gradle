@@ -203,3 +203,8 @@ subprojects  {
 }
 
 apply plugin: 'com.palantir.jacoco-full-report'
+
+    
+jacoco {
+    toolVersion = '0.7.9' // See http://www.eclemma.org/jacoco/.
+}

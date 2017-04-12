@@ -8,8 +8,8 @@ before_install:
   - chmod +x gradlew
 
 script:
-  - ./gradlew check
-  - ./gradlew test jacocoFullReport
+  - ./gradlew assemble
+  - ./gradlew check jacocoFullReport
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
