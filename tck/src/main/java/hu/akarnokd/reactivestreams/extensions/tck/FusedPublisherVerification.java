@@ -16,26 +16,6 @@
 
 package hu.akarnokd.reactivestreams.extensions.tck;
 
-public class TckRelaxedTestSettings {
+public abstract class FusedPublisherVerification<T> extends RelaxedPublisherVerification<T> {
 
-    public final int itemTimeoutMillis;
-
-    public final int gcGracePeriodMillis;
-
-    public TckRelaxedTestSettings() {
-        this(100, 500);
-    }
-
-    public TckRelaxedTestSettings(int itemTimeoutMillis) {
-        this(itemTimeoutMillis, 500);
-    }
-
-    public TckRelaxedTestSettings(int itemTimeoutMillis, int gcGracePeriodMillis) {
-        this.itemTimeoutMillis = itemTimeoutMillis;
-        this.gcGracePeriodMillis = gcGracePeriodMillis;
-    }
-
-    public <T> TckStandardSubscriber<T> newStandardSubscriber() {
-        return new TckStandardSubscriber<T>(itemTimeoutMillis);
-    }
 }

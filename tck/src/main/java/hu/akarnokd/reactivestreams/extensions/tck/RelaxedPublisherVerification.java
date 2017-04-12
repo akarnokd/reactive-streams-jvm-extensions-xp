@@ -18,28 +18,17 @@ package hu.akarnokd.reactivestreams.extensions.tck;
 
 import java.util.*;
 
-import org.reactivestreams.Publisher;
 import org.testng.annotations.Test;
 
-public abstract class RelaxedPublisherVerification<T> {
+public abstract class RelaxedPublisherVerification<T> extends StandardPublisherVerification<T> {
+
+    final List<Throwable> externalErrors = Collections.synchronizedList(new ArrayList<Throwable>());
 
     public interface ExternalErrorConsumer {
 
         void accept(Throwable error);
 
     }
-
-    final TckRelaxedTestSettings settings;
-
-    public RelaxedPublisherVerification() {
-        this(new TckRelaxedTestSettings());
-    }
-
-    public RelaxedPublisherVerification(TckRelaxedTestSettings settings) {
-        this.settings = settings;
-    }
-
-    final List<Throwable> externalErrors = Collections.synchronizedList(new ArrayList<Throwable>());
 
     final ExternalErrorConsumer errorConsumer = new ExternalErrorConsumer() {
         @Override
@@ -48,28 +37,8 @@ public abstract class RelaxedPublisherVerification<T> {
         }
     };
 
-    public abstract Publisher<T> createPublisher(int elements);
-
-    public Publisher<T> createErrorPublisher(int elements) {
-        return null;
-    }
-
-    public int maximumNumberOfElements() {
-        return -1;
-    }
-
-    public boolean supportsFusionMode(int mode) {
-        return true;
-    }
-
     public void setExternalErrorHandler(ExternalErrorConsumer errorConsumer) {
         // default does not provide any external error handling capability
-    }
-
-    interface TestBody<T> {
-
-        void run(Publisher<T> publisher, int elements) throws Throwable;
-
     }
 
     @Test

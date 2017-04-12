@@ -16,26 +16,15 @@
 
 package hu.akarnokd.reactivestreams.extensions.tck;
 
-public class TckRelaxedTestSettings {
+import org.reactivestreams.*;
 
-    public final int itemTimeoutMillis;
+import hu.akarnokd.reactivestreams.extensions.tools.*;
 
-    public final int gcGracePeriodMillis;
+final class EmptyPublisher<T> implements Publisher<T> {
 
-    public TckRelaxedTestSettings() {
-        this(100, 500);
+    @Override
+    public void subscribe(Subscriber<? super T> s) {
+        EmptySubscription.complete(StrictAtomicSubscriber.wrap(s));
     }
 
-    public TckRelaxedTestSettings(int itemTimeoutMillis) {
-        this(itemTimeoutMillis, 500);
-    }
-
-    public TckRelaxedTestSettings(int itemTimeoutMillis, int gcGracePeriodMillis) {
-        this.itemTimeoutMillis = itemTimeoutMillis;
-        this.gcGracePeriodMillis = gcGracePeriodMillis;
-    }
-
-    public <T> TckStandardSubscriber<T> newStandardSubscriber() {
-        return new TckStandardSubscriber<T>(itemTimeoutMillis);
-    }
 }
