@@ -10,11 +10,15 @@ Experimental extensions to the Reactive-Streams API and TCKs: fusion, queues, st
 ## Dependency
 
 ```groovy
+// The main extension API
 compile 'com.github.akarnokd:reactive-streams-extension:0.1.0'
 
-compile 'com.github.akarnokd:reactive-streams-extension-tck:0.1.0'
+// Test Compatibility Kit for verifying implementors of the extension API
+testCompile 'com.github.akarnokd:reactive-streams-extension-tck:0.1.0'
 
+// Standard tools for both the regular Reactive-Streams and this extension API
 compile 'com.github.akarnokd:reactive-streams-extension-tools:0.1.0'
 
+// Example Publishers, Processors and Subscribers implemented with the extension API
 compile 'com.github.akarnokd:reactive-streams-extension-examples:0.1.0'
 ```
