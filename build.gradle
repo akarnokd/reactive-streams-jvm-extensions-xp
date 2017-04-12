@@ -14,6 +14,10 @@ buildscript {
     }
 }
 
+repositories {
+    mavenCentral()
+}
+
 ext.githubProjectName = 'reactive-streams-jvm-extensions-xp'
 
 subprojects  {
