@@ -87,12 +87,9 @@ public class StrictAtomicSubscriber<T> implements RelaxedSubscriber<T>, Subscrip
 
             actual.onSubscribe(this);
 
-            upstream.lazySet(s);
-            long r = requested.getAndSet(0L);
-            if (r != 0L) {
-                s.request(r);
-            }
+            SubscriptionTools.deferredSetOnce(upstream, requested, s);
         } else {
+            s.cancel();
             if (!SubscriptionTools.isCancelled(upstream)) {
                 cancel();
                 onError(new IllegalStateException("Subscription already set!"));

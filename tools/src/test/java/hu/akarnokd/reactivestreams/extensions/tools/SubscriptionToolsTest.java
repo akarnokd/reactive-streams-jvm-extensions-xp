@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.*;
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 
-import hu.akarnokd.reactivestreams.extensions.ConditionalSubscriber;
 import hu.akarnokd.reactivestreams.extensions.tools.SubscriptionTools.SetOnceResult;
 
 public class SubscriptionToolsTest {
@@ -576,38 +575,6 @@ public class SubscriptionToolsTest {
 
             assertEquals(0, requested.get());
         }
-    }
-
-    static final class BasicSubscriber implements ConditionalSubscriber<Object> {
-
-        final List<Object> events = new ArrayList<Object>();
-
-        @Override
-        public void onSubscribe(Subscription s) {
-            s.request(Long.MAX_VALUE);
-        }
-
-        @Override
-        public void onNext(Object t) {
-            events.add(t);
-        }
-
-        @Override
-        public boolean tryOnNext(Object t) {
-            events.add(t);
-            return true;
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            events.add(t.getMessage());
-        }
-
-        @Override
-        public void onComplete() {
-            events.add("OnComplete");
-        }
-
     }
 
     @Test

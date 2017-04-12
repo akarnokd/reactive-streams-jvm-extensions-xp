@@ -97,12 +97,9 @@ public class StrictVolatileSubscriber<T> implements RelaxedSubscriber<T>, Subscr
 
             actual.onSubscribe(this);
 
-            UPSTREAM.lazySet(this, s);
-            long r = REQUESTED.getAndSet(this, 0L);
-            if (r != 0L) {
-                s.request(r);
-            }
+            SubscriptionTools.deferredSetOnce(this, UPSTREAM, REQUESTED, s);
         } else {
+            s.cancel();
             if (!SubscriptionTools.isCancelled(upstream)) {
                 cancel();
                 onError(new IllegalStateException("Subscription already set!"));
