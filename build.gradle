@@ -186,6 +186,16 @@ subprojects  {
 	check.dependsOn pmdPrint
 
 	animalsniffer {
-		annotation = 'rx.internal.util.SuppressAnimalSniffer'
+		annotation = 'hu.akarnokd.reactivestreams.extensions.tools.SuppressAnimalSniffer'
 	}
+	
+	publishing.publications.all {
+      pom.withXml {
+        asNode().dependencies.'*'.findAll() {
+          it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
+            dep.name == it.artifactId.text()
+          }
+        }.each { it.scope*.value = 'compile'}
+      }
+    }
 }

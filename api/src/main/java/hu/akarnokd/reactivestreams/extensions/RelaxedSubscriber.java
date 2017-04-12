@@ -24,11 +24,32 @@ import org.reactivestreams.*;
  * <p>
  * The rule relaxations are as follows:
  * <ul>
+ * <li><b>§1.3 relaxation:</b> {@code onSubscribe} may run concurrently with {@code onNext} in case 
+ * the {@code RelaxedSubscriber} calls {@code request()} from inside {@code onSubscribe} and it is the 
+ * resposibility of {@code RelaxedSubscriber} to ensure thread-safety between the remaining 
+ * instructions in {@code onSubscribe} and {@code onNext}.</li>
+ * <li><b>§2.3 relaxation:</b> calling {@code Subscription.cancel()} and {@code Subscription.request()} from 
+ * {@code RelaxedSubscriber.onComplete()} or {@code RelaxedSubscriber.onError()} is considered a no-operation.</li>
+ * <li><b>§2.12 relaxation:</b> if the same {@code RelaxedSubscriber} instance is subscribed to 
+ * multiple sources, it must ensure its {@code onXXX} methods remain thread safe.</li>
+ * <li><b>§3.9 relaxation:</b> issuing a non-positive {@code request()} will not stop the current stream 
+ * and otherwise not required to signal an {@code IllegalArgumentException} via {@code onError}.</li>
  * </ul>
  * @param <T> the value type
  */
 public interface RelaxedSubscriber<T> extends Subscriber<T> {
 
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Additional requirements/relaxations:
+     * <ul>
+     * <li><b>§1.3 relaxation:</b> {@code onSubscribe} may run concurrently with {@code onNext} in case 
+     * the {@code RelaxedSubscriber} calls {@code request()} from inside {@code onSubscribe} and it is the 
+     * resposibility of {@code RelaxedSubscriber} to ensure thread-safety between the remaining 
+     * instructions in {@code onSubscribe} and {@code onNext}.</li>
+     * </ul>
+     */
     @Override
     void onSubscribe(Subscription s);
 
