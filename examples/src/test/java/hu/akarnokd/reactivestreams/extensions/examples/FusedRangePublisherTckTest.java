@@ -22,11 +22,11 @@ import org.testng.annotations.Test;
 import hu.akarnokd.reactivestreams.extensions.examples.UndeliverableErrors.Handler;
 import hu.akarnokd.reactivestreams.extensions.tck.FusedConditionalPublisherVerification;
 
-public class FusedRangeTckTest extends FusedConditionalPublisherVerification<Integer> {
+public class FusedRangePublisherTckTest extends FusedConditionalPublisherVerification<Integer> {
 
     @Override
     public Publisher<Integer> createPublisher(int elements) {
-        return new FusedRange(1, elements);
+        return new FusedRangePublisher(1, elements);
     }
 
     @Override

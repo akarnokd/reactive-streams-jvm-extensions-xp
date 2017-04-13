@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-package hu.akarnokd.reactivestreams.extensions.tck;
+package hu.akarnokd.reactivestreams.extensions.tck.support;
 
-import org.reactivestreams.Publisher;
+public final class TckUndeliverableErrors {
 
-import hu.akarnokd.reactivestreams.extensions.tck.support.*;
+    public static volatile Handler handler;
 
-public class JustStandardTckTest extends StandardPublisherVerification<Integer> {
-
-    @Override
-    public Publisher<Integer> createPublisher(int elements) {
-        return new JustPublisher<Integer>(1);
+    private TckUndeliverableErrors() {
+        throw new IllegalStateException("No instances!");
     }
 
-    @Override
-    public Publisher<Integer> createErrorPublisher(int elements) {
-        return new JustErrorPublisher<Integer>(1, new Exception());
+    public interface Handler {
+
+        void handle(Throwable error);
+
     }
 
-    @Override
-    public int maximumNumberOfElements() {
-        return 1;
+    public static void onError(Throwable error) {
+        if (error == null) {
+            error = new NullPointerException("error is null");
+        }
+        Handler h = handler;
+        if (h != null) {
+            h.handle(error);
+        }
     }
 }

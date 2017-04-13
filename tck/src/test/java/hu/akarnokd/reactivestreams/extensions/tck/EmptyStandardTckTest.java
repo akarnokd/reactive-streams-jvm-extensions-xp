@@ -18,13 +18,18 @@ package hu.akarnokd.reactivestreams.extensions.tck;
 
 import org.reactivestreams.Publisher;
 
-import hu.akarnokd.reactivestreams.extensions.tck.support.EmptyPublisher;
+import hu.akarnokd.reactivestreams.extensions.tck.support.*;
 
 public class EmptyStandardTckTest extends StandardPublisherVerification<Integer> {
 
     @Override
     public Publisher<Integer> createPublisher(int elements) {
         return new EmptyPublisher<Integer>();
+    }
+
+    @Override
+    public Publisher<Integer> createErrorPublisher(int elements) {
+        return new ErrorPublisher<Integer>(new Exception());
     }
 
     @Override

@@ -16,21 +16,21 @@
 
 package hu.akarnokd.reactivestreams.extensions.tck;
 
-public class TckRelaxedTestSettings {
+public class TckTestSettings {
 
     public final int itemTimeoutMillis;
 
     public final int gcGracePeriodMillis;
 
-    public TckRelaxedTestSettings() {
+    public TckTestSettings() {
         this(100, 500);
     }
 
-    public TckRelaxedTestSettings(int itemTimeoutMillis) {
+    public TckTestSettings(int itemTimeoutMillis) {
         this(itemTimeoutMillis, 500);
     }
 
-    public TckRelaxedTestSettings(int itemTimeoutMillis, int gcGracePeriodMillis) {
+    public TckTestSettings(int itemTimeoutMillis, int gcGracePeriodMillis) {
         this.itemTimeoutMillis = itemTimeoutMillis;
         this.gcGracePeriodMillis = gcGracePeriodMillis;
     }

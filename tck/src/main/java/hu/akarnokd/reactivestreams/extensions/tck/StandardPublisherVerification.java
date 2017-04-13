@@ -41,14 +41,14 @@ public abstract class StandardPublisherVerification<T> {
     /**
      * The test settings.
      */
-    protected final TckRelaxedTestSettings settings;
+    protected final TckTestSettings settings;
 
     /**
      * Constructs a StandardPublisherVerification with the default
      * test settings.
      */
     public StandardPublisherVerification() {
-        this(new TckRelaxedTestSettings());
+        this(new TckTestSettings());
     }
 
     /**
@@ -56,7 +56,7 @@ public abstract class StandardPublisherVerification<T> {
      * custom test settings.
      * @param settings the test settings to use, not null
      */
-    public StandardPublisherVerification(TckRelaxedTestSettings settings) {
+    public StandardPublisherVerification(TckTestSettings settings) {
         this.settings = settings;
     }
 

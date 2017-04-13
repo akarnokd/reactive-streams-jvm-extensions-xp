@@ -23,13 +23,13 @@ import org.reactivestreams.*;
 import hu.akarnokd.reactivestreams.extensions.*;
 import hu.akarnokd.reactivestreams.extensions.tools.*;
 
-public final class FusedRange implements Publisher<Integer> {
+public final class FusedRangePublisher implements Publisher<Integer> {
 
     final int start;
 
     final int count;
 
-    public FusedRange(int start, int count) {
+    public FusedRangePublisher(int start, int count) {
         this.start = start;
         this.count = count;
     }
