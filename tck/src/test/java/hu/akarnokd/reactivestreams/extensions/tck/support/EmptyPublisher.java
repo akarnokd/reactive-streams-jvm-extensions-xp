@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package hu.akarnokd.reactivestreams.extensions.tck;
+package hu.akarnokd.reactivestreams.extensions.tck.support;
 
 import org.reactivestreams.*;
 
 import hu.akarnokd.reactivestreams.extensions.tools.*;
 
-final class ErrorPublisher<T> implements Publisher<T> {
-
-    final Throwable error;
-
-    ErrorPublisher(Throwable error) {
-        this.error = error;
-    }
+public final class EmptyPublisher<T> implements Publisher<T> {
 
     @Override
     public void subscribe(Subscriber<? super T> s) {
-        EmptySubscription.error(StrictAtomicSubscriber.wrap(s), error);
+        EmptySubscription.complete(StrictAtomicSubscriber.wrap(s));
     }
+
 }

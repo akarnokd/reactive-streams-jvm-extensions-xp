@@ -18,6 +18,8 @@ package hu.akarnokd.reactivestreams.extensions.tck;
 
 import org.reactivestreams.Publisher;
 
+import hu.akarnokd.reactivestreams.extensions.tck.support.JustPublisher;
+
 public class JustStandardTckTest extends StandardPublisherVerification<Integer> {
 
     @Override

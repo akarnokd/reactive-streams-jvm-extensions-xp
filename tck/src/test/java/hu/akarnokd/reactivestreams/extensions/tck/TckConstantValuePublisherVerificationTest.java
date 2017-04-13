@@ -16,20 +16,6 @@
 
 package hu.akarnokd.reactivestreams.extensions.tck;
 
-import org.reactivestreams.Publisher;
-
-import hu.akarnokd.reactivestreams.extensions.tck.support.EmptyPublisher;
-
-public class EmptyStandardTckTest extends StandardPublisherVerification<Integer> {
-
-    @Override
-    public Publisher<Integer> createPublisher(int elements) {
-        return new EmptyPublisher<Integer>();
-    }
-
-    @Override
-    public int maximumNumberOfElements() {
-        return 0;
-    }
+public class TckConstantValuePublisherVerificationTest {
 
 }

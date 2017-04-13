@@ -14,8 +14,22 @@
  * limitations under the License.
  */
 
-package hu.akarnokd.reactivestreams.extensions.tck;
+package hu.akarnokd.reactivestreams.extensions.tck.support;
 
-public class ConstantValuePublisherVerificationTest {
+import org.reactivestreams.*;
 
+import hu.akarnokd.reactivestreams.extensions.tools.*;
+
+public final class ErrorPublisher<T> implements Publisher<T> {
+
+    final Throwable error;
+
+    public ErrorPublisher(Throwable error) {
+        this.error = error;
+    }
+
+    @Override
+    public void subscribe(Subscriber<? super T> s) {
+        EmptySubscription.error(StrictAtomicSubscriber.wrap(s), error);
+    }
 }

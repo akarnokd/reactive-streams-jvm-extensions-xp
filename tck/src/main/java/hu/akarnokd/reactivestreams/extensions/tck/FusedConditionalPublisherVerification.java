@@ -16,6 +16,6 @@
 
 package hu.akarnokd.reactivestreams.extensions.tck;
 
-public abstract class FusedConditionalPublisherVerification<T> extends ConditionalPublisherVerification<T> {
+public abstract class FusedConditionalPublisherVerification<T> extends FusedPublisherVerification<T> {
 
 }

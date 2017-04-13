@@ -53,7 +53,7 @@ public abstract class StandardPublisherVerification<T> {
 
     /**
      * Constructs a StandardPublisherVerification with the specified
-     * custom test settings
+     * custom test settings.
      * @param settings the test settings to use, not null
      */
     public StandardPublisherVerification(TckRelaxedTestSettings settings) {
@@ -177,6 +177,7 @@ public abstract class StandardPublisherVerification<T> {
             }
         }, 0, 1, 2, 3, 5, 10, 20);
     }
+
     // -------------------------------------------------------------------------
     // Standard test infrastructure
     // -------------------------------------------------------------------------
@@ -188,7 +189,50 @@ public abstract class StandardPublisherVerification<T> {
 
     }
 
-    final AssertionError fail(String message, List<? extends Throwable> errors, List<Integer> elementCounts) {
+    protected final AssertionError fail(String message, List<? extends Throwable> errors, List<Integer> elementCounts) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        pw.println(message);
+        for (int i = 0; i < errors.size(); i++) {
+            pw.print("Elements: ");
+            pw.print(elementCounts.get(i));
+            Throwable e = errors.get(i);
+
+            pw.print(" - ");
+            pw.print(e.getClass().getSimpleName());
+            pw.print(": ");
+            String[] msg = e.getMessage().split("\n");
+            if (msg.length != 0) {
+                pw.println(msg[0].trim());
+            }
+
+            e.printStackTrace(pw);
+        }
+        pw.close();
+        return new AssertionError(sw.toString());
+    }
+
+    protected final AssertionError fail(String message, List<? extends Throwable> errors) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        pw.println(message);
+        for (int i = 0; i < errors.size(); i++) {
+            Throwable e = errors.get(i);
+            pw.print(" - ");
+            pw.print(e.getClass().getSimpleName());
+            pw.print(": ");
+            String[] msg = e.getMessage().split("\n");
+            if (msg.length != 0) {
+                pw.println(msg[0].trim());
+            }
+
+            e.printStackTrace(pw);
+        }
+        pw.close();
+        return new AssertionError(sw.toString());
+    }
+
+    protected final SkipException skip(String message, List<? extends Throwable> errors, List<Integer> elementCounts) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         pw.println(message);
@@ -199,16 +243,14 @@ public abstract class StandardPublisherVerification<T> {
             e.printStackTrace(pw);
         }
         pw.close();
-        return new AssertionError(sw.toString());
+        return new SkipException(sw.toString());
     }
 
-    final SkipException skip(String message, List<? extends Throwable> errors, List<Integer> elementCounts) {
+    protected final SkipException skip(String message, List<? extends Throwable> errors) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         pw.println(message);
         for (int i = 0; i < errors.size(); i++) {
-            pw.print("Elements: ");
-            pw.println(elementCounts.get(i));
             Throwable e = errors.get(i);
             e.printStackTrace(pw);
         }

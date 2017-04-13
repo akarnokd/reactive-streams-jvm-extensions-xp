@@ -16,15 +16,6 @@
 
 package hu.akarnokd.reactivestreams.extensions.tck;
 
-import org.reactivestreams.*;
-
-import hu.akarnokd.reactivestreams.extensions.tools.*;
-
-final class EmptyPublisher<T> implements Publisher<T> {
-
-    @Override
-    public void subscribe(Subscriber<? super T> s) {
-        EmptySubscription.complete(StrictAtomicSubscriber.wrap(s));
-    }
+public class TckStandardPublisherVerificationTest {
 
 }

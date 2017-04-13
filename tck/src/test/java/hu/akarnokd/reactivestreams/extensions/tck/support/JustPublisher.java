@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package hu.akarnokd.reactivestreams.extensions.tck;
+package hu.akarnokd.reactivestreams.extensions.tck.support;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -22,11 +22,11 @@ import org.reactivestreams.*;
 
 import hu.akarnokd.reactivestreams.extensions.tools.StrictAtomicSubscriber;
 
-final class JustPublisher<T> implements Publisher<T> {
+public final class JustPublisher<T> implements Publisher<T> {
 
     final T item;
 
-    JustPublisher(T item) {
+    public JustPublisher(T item) {
         this.item = item;
     }
 

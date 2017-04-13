@@ -14,8 +14,29 @@
  * limitations under the License.
  */
 
-package hu.akarnokd.reactivestreams.extensions.tck;
+package hu.akarnokd.reactivestreams.extensions.examples;
 
-public class StandardPublisherVerificationTest {
+public final class UndeliverableErrors {
 
+    static volatile Handler handler;
+
+    private UndeliverableErrors() {
+        throw new IllegalStateException("No instances!");
+    }
+
+    public interface Handler {
+
+        void handle(Throwable error);
+
+    }
+
+    public static void onError(Throwable error) {
+        if (error == null) {
+            error = new NullPointerException("error is null");
+        }
+        Handler h = handler;
+        if (h != null) {
+            h.handle(error);
+        }
+    }
 }

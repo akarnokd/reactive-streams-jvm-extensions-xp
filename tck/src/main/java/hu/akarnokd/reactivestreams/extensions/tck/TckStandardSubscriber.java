@@ -27,39 +27,49 @@ import org.reactivestreams.*;
 import hu.akarnokd.reactivestreams.extensions.tools.SubscriptionTools;
 import hu.akarnokd.reactivestreams.extensions.tools.SubscriptionTools.SetOnceResult;
 
-class TckStandardSubscriber<T> implements Subscriber<T> {
+/**
+ * The default, standard test subscriber implementation.
+ *
+ * @param <T> the value type received
+ */
+public class TckStandardSubscriber<T> implements Subscriber<T> {
 
-    final AtomicReference<Subscription> upstream;
+    protected final AtomicReference<Subscription> upstream;
 
-    final AtomicLong requested;
+    protected final AtomicLong requested;
 
-    final int itemTimeoutMillis;
+    protected final int itemTimeoutMillis;
 
-    final ConcurrentLinkedQueue<Object> queue;
+    protected final ConcurrentLinkedQueue<Object> queue;
 
-    final Lock lock;
+    protected final Lock lock;
 
-    final Condition nonEmpty;
+    protected final Condition nonEmpty;
 
-    final CountDownLatch subscribed;
+    protected final CountDownLatch subscribed;
 
-    final CountDownLatch terminated;
+    protected final CountDownLatch terminated;
 
-    final List<Throwable> errors;
+    protected final List<Throwable> errors;
 
-    static final Object COMPLETE = new Object();
+    protected static final Object COMPLETE = new Object();
 
-    volatile long subscribeCount;
+    protected volatile long subscribeCount;
 
-    volatile long elementCount;
+    protected volatile long elementCount;
 
-    volatile long errorCount;
+    protected volatile long errorCount;
 
-    volatile long completeCount;
+    protected volatile long completeCount;
 
-    static final class ErrorSignal {
-        final Throwable error;
-        ErrorSignal(Throwable error) {
+    /**
+     * The distinctive holder of Throwable signals for the event queue.
+     */
+    public static final class ErrorSignal {
+
+        public final Throwable error;
+
+        public ErrorSignal(Throwable error) {
             this.error = error;
         }
         @Override
@@ -68,7 +78,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         }
     }
 
-    TckStandardSubscriber(int itemTimeoutMillis) {
+    public TckStandardSubscriber(int itemTimeoutMillis) {
         this.itemTimeoutMillis = itemTimeoutMillis;
         this.upstream = new AtomicReference<Subscription>();
         this.requested = new AtomicLong();
@@ -92,7 +102,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         SubscriptionTools.cancel(upstream);
     }
 
-    void offer(Object t) {
+    protected final void offer(Object t) {
         queue.offer(t);
         lock.lock();
         try {
@@ -102,7 +112,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         }
     }
 
-    Object peek(int timeoutMillis) throws InterruptedException {
+    protected final Object peek(int timeoutMillis) throws InterruptedException {
         Object o = queue.peek();
         if (o == null) {
             lock.lock();
@@ -165,20 +175,12 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         subscribed.countDown();
     }
 
-    public boolean expectAnyElementOrComplete() throws Throwable {
-        return false;
-    }
-
-    public boolean expectAnyElementOrError() throws Throwable {
-        return false;
-    }
-
     /**
      * Checks if the given number of elements are received.
      * @param elementCount the number of elements expected, non-negative
      * @throws Throwable allow throwing any exceptions
      */
-    public void expectElements(int elementCount) throws Throwable {
+    public final void expectElements(int elementCount) throws Throwable {
         for (int i = 0; i < elementCount; i++) {
             Object o = peek(itemTimeoutMillis);
             if (o == null) {
@@ -204,10 +206,10 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
 
     /**
      * Checks if at most the given number of elements are received.
-     * @param elmentCount
-     * @throws Throwable
+     * @param elmentCount the maximum number of elements expected
+     * @throws Throwable allows the implementation to throw any exception
      */
-    public void expectAnyElements(int elmentCount) throws Throwable {
+    public final void expectAnyElements(int elmentCount) throws Throwable {
         for (int i = 0; i < elementCount; i++) {
             Object o = peek(itemTimeoutMillis);
             if (o == null) {
@@ -228,7 +230,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         throw fail("At most " + elementCount + " elements expected yet one extra received: " + valueAndClass(o));
     }
 
-    public void expectElement(T element) throws Throwable {
+    public final void expectElement(T element) throws Throwable {
         Object o = peek(itemTimeoutMillis);
         if (o == null) {
             throw fail("No element received within " + itemTimeoutMillis + " ms");
@@ -245,7 +247,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         }
     }
 
-    public boolean expectAnyElement(Collection<T> elements) throws Throwable {
+    public final boolean expectAnyElement(Collection<T> elements) throws Throwable {
         Object o = peek(itemTimeoutMillis);
         if (o == null) {
             throw fail("No signal received within " + itemTimeoutMillis + " ms");
@@ -263,7 +265,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         return true;
     }
 
-    public void expectComplete() throws Throwable {
+    public final void expectComplete() throws Throwable {
         Object o = peek(itemTimeoutMillis);
         if (o == null) {
             throw fail("Not completed within " + itemTimeoutMillis + " ms");
@@ -278,7 +280,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         throw fail("Completion expected but element found: " + valueAndClass(o));
     }
 
-    public void expectError() throws Throwable {
+    public final void expectError() throws Throwable {
         Object o = peek(itemTimeoutMillis);
         if (o == null) {
             throw fail("Error not received within " + itemTimeoutMillis + " ms");
@@ -293,7 +295,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         throw fail("Error expected but element found: " + valueAndClass(o));
     }
 
-    public void expectTerminate() throws Throwable {
+    public final void expectTerminate() throws Throwable {
         Object o = peek(itemTimeoutMillis);
         if (o == null) {
             throw fail("No terminal signal received within " + itemTimeoutMillis + " ms");
@@ -312,7 +314,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
      * @return true if the expected element was received, false if a terminal event was received instead.
      * @throws Throwable allows throwing any exception
      */
-    public boolean tryExpectElement(T element) throws Throwable {
+    public final boolean tryExpectElement(T element) throws Throwable {
         Object o = peek(itemTimeoutMillis);
         if (o == null) {
             throw fail("No signal received within " + itemTimeoutMillis + " ms");
@@ -327,7 +329,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         return true;
     }
 
-    public boolean tryExpectAnyElement(Collection<T> elements) throws Throwable {
+    public final boolean tryExpectAnyElement(Collection<T> elements) throws Throwable {
         Object o = peek(itemTimeoutMillis);
         if (o == null) {
             throw fail("No signal received within " + itemTimeoutMillis + " ms");
@@ -342,13 +344,13 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         return true;
     }
 
-    public void expectSubscribe() throws Throwable {
+    public final void expectSubscribe() throws Throwable {
         if (!subscribed.await(itemTimeoutMillis, TimeUnit.MILLISECONDS)) {
             throw fail("onSubscribe not called within " + itemTimeoutMillis + " milliseconds");
         }
     }
 
-    public void expectNoErrors() throws Throwable {
+    public final void expectNoErrors() throws Throwable {
         long c = errorCount;
         if (c == 1) {
             throw fail("Unexpected error: " + errors.get(0));
@@ -358,7 +360,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         }
     }
 
-    public void expectNoComplete() throws Throwable {
+    public final void expectNoComplete() throws Throwable {
         long c = completeCount;
         if (c == 1) {
             throw fail("Unexpected completion");
@@ -372,6 +374,15 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         if (errorCount > 0 && completeCount > 0) {
             throw fail("Invalid state");
         }
+    }
+
+    public Throwable tryExpectError() throws Throwable {
+        Object o = peek(itemTimeoutMillis);
+        if (o instanceof ErrorSignal) {
+            queue.poll();
+            return ((ErrorSignal)o).error;
+        }
+        return null;
     }
 
     protected final AssertionError fail(String message) {
@@ -388,9 +399,7 @@ class TckStandardSubscriber<T> implements Subscriber<T> {
         pw.print(", onComplete: ");
         pw.print(completeCount);
         if (SubscriptionTools.isCancelled(upstream)) {
-            pw.println(", cancelled");
-        } else {
-            pw.println();
+            pw.print(", cancelled");
         }
 
         for (Throwable e : errors) {

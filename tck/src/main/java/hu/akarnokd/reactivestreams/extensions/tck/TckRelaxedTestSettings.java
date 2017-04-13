@@ -38,4 +38,8 @@ public class TckRelaxedTestSettings {
     public <T> TckStandardSubscriber<T> newStandardSubscriber() {
         return new TckStandardSubscriber<T>(itemTimeoutMillis);
     }
+
+    public <T> TckFusedSubscriber<T> newFusedSubscriber() {
+        return new TckFusedSubscriber<T>(itemTimeoutMillis);
+    }
 }
