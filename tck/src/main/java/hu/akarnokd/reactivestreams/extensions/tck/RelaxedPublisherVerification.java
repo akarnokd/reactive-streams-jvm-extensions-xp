@@ -97,9 +97,9 @@ public abstract class RelaxedPublisherVerification<T> extends StandardPublisherV
 
     @Test
     public void optionalRelaxedPublisherZeroRequestSignalsError() {
-        runPublisher(false, false, new TestBody<T>() {
+        runPublisher(false, new TestBody<T>() {
             @Override
-            public void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable {
+            public void run(Publisher<T> publisher, int elements, boolean exact, boolean errorResult) throws Throwable {
                 TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
 
                 try {
@@ -148,9 +148,9 @@ public abstract class RelaxedPublisherVerification<T> extends StandardPublisherV
 
     @Test
     public void optionalRelaxedPublisherZeroRequestSignalsErrorAfterOneElement() {
-        runPublisher(false, false, new TestBody<T>() {
+        runPublisher(false, new TestBody<T>() {
             @Override
-            public void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable {
+            public void run(Publisher<T> publisher, int elements, boolean exact, boolean errorResult) throws Throwable {
                 TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
 
                 try {
@@ -206,9 +206,9 @@ public abstract class RelaxedPublisherVerification<T> extends StandardPublisherV
 
     @Test
     public void optionalRelaxedPublisherNegativeRequestSignalsError() {
-        runPublisher(false, false, new TestBody<T>() {
+        runPublisher(false, new TestBody<T>() {
             @Override
-            public void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable {
+            public void run(Publisher<T> publisher, int elements, boolean exact, boolean errorResult) throws Throwable {
                 TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
 
                 try {
@@ -256,225 +256,9 @@ public abstract class RelaxedPublisherVerification<T> extends StandardPublisherV
 
     @Test
     public void optionalRelaxedPublisherNegativeRequestSignalsErrorAfterOneElement() {
-        runPublisher(false, false, new TestBody<T>() {
+        runPublisher(false, new TestBody<T>() {
             @Override
-            public void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable {
-                TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
-
-                try {
-                    publisher.subscribe(sub);
-
-                    sub.expectSubscribe();
-
-                    sub.request(1);
-
-                    if (exact) {
-                        sub.expectElements(1);
-                    } else {
-                        sub.expectAnyElements(1);
-                    }
-                    sub.requestDirect(-1);
-
-                    Throwable error = sub.tryExpectError();
-                    if (error == null) {
-                        if (externalErrors.isEmpty()) {
-                            throw new SkipException("No error received within " + settings.itemTimeoutMillis + " ms");
-                        } else {
-                            for (Throwable ex : externalErrors) {
-                                if (ex instanceof IllegalArgumentException) {
-                                    sub.cancel();
-                                    return;
-                                }
-                                if (ex instanceof IllegalStateException) {
-                                    sub.cancel();
-                                    return;
-                                }
-                            }
-                            throw skip("Errors received but none of them was recognized", externalErrors);
-                        }
-                    } else {
-                        if (error instanceof IllegalArgumentException) {
-                            sub.cancel();
-                            return;
-                        }
-                        if (error instanceof IllegalStateException) {
-                            sub.cancel();
-                            return;
-                        }
-                        throw new SkipException("An unrecognized error was received", error);
-                    }
-                } catch (Throwable ex) {
-                    sub.cancel();
-                    throw ex;
-                }
-            }
-        }, 2, 3, 5, 10, 20);
-    }
-
-    @Test
-    public void optionalRelaxedErrorPublisherZeroRequestSignalsError() {
-        runPublisher(false, true, new TestBody<T>() {
-            @Override
-            public void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable {
-                TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
-
-                try {
-                    publisher.subscribe(sub);
-
-                    sub.expectSubscribe();
-
-                    sub.requestDirect(0);
-
-                    Throwable error = sub.tryExpectError();
-                    if (error == null) {
-                        if (externalErrors.isEmpty()) {
-                            throw new SkipException("No error received within " + settings.itemTimeoutMillis + " ms");
-                        } else {
-                            for (Throwable ex : externalErrors) {
-                                if (ex instanceof IllegalArgumentException) {
-                                    sub.cancel();
-                                    return;
-                                }
-                                if (ex instanceof IllegalStateException) {
-                                    sub.cancel();
-                                    return;
-                                }
-                            }
-                            throw skip("Errors received but none of them was recognized", externalErrors);
-                        }
-                    } else {
-                        if (error instanceof IllegalArgumentException) {
-                            sub.cancel();
-                            return;
-                        }
-                        if (error instanceof IllegalStateException) {
-                            sub.cancel();
-                            return;
-                        }
-                        throw new SkipException("An unrecognized error was received", error);
-                    }
-                } catch (Throwable ex) {
-                    sub.cancel();
-                    throw ex;
-                }
-            }
-        }, 0, 1, 2, 3, 5, 10, 20);
-    }
-
-
-    @Test
-    public void optionalRelaxedErrorPublisherZeroRequestSignalsErrorAfterOneElement() {
-        runPublisher(false, true, new TestBody<T>() {
-            @Override
-            public void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable {
-                TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
-
-                try {
-                    publisher.subscribe(sub);
-
-                    sub.expectSubscribe();
-
-                    sub.request(1);
-
-                    if (exact) {
-                        sub.expectElements(1);
-                    } else {
-                        sub.expectAnyElements(1);
-                    }
-                    sub.requestDirect(0);
-
-                    Throwable error = sub.tryExpectError();
-                    if (error == null) {
-                        if (externalErrors.isEmpty()) {
-                            throw new SkipException("No error received within " + settings.itemTimeoutMillis + " ms");
-                        } else {
-                            for (Throwable ex : externalErrors) {
-                                if (ex instanceof IllegalArgumentException) {
-                                    sub.cancel();
-                                    return;
-                                }
-                                if (ex instanceof IllegalStateException) {
-                                    sub.cancel();
-                                    return;
-                                }
-                            }
-                            throw skip("Errors received but none of them was recognized", externalErrors);
-                        }
-                    } else {
-                        if (error instanceof IllegalArgumentException) {
-                            sub.cancel();
-                            return;
-                        }
-                        if (error instanceof IllegalStateException) {
-                            sub.cancel();
-                            return;
-                        }
-                        throw new SkipException("An unrecognized error was received", error);
-                    }
-                } catch (Throwable ex) {
-                    sub.cancel();
-                    throw ex;
-                }
-            }
-        }, 2, 3, 5, 10, 20);
-    }
-
-
-    @Test
-    public void optionalRelaxedErrorPublisherNegativeRequestSignalsError() {
-        runPublisher(false, true, new TestBody<T>() {
-            @Override
-            public void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable {
-                TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
-
-                try {
-                    publisher.subscribe(sub);
-
-                    sub.expectSubscribe();
-
-                    sub.requestDirect(-1);
-
-                    Throwable error = sub.tryExpectError();
-                    if (error == null) {
-                        if (externalErrors.isEmpty()) {
-                            throw new SkipException("No error received within " + settings.itemTimeoutMillis + " ms");
-                        }
-                        for (Throwable ex : externalErrors) {
-                            if (ex instanceof IllegalArgumentException) {
-                                sub.cancel();
-                                return;
-                            }
-                            if (ex instanceof IllegalStateException) {
-                                sub.cancel();
-                                return;
-                            }
-                        }
-                        throw skip("Errors received but none of them was recognized", externalErrors);
-                    } else {
-                        if (error instanceof IllegalArgumentException) {
-                            sub.cancel();
-                            return;
-                        }
-                        if (error instanceof IllegalStateException) {
-                            sub.cancel();
-                            return;
-                        }
-                        throw new SkipException("An unrecognized error was received", error);
-                    }
-                } catch (Throwable ex) {
-                    sub.cancel();
-                    throw ex;
-                }
-            }
-        }, 0, 1, 2, 3, 5, 10, 20);
-    }
-
-
-    @Test
-    public void optionalRelaxedErrorPublisherNegativeRequestSignalsErrorAfterOneElement() {
-        runPublisher(false, true, new TestBody<T>() {
-            @Override
-            public void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable {
+            public void run(Publisher<T> publisher, int elements, boolean exact, boolean errorResult) throws Throwable {
                 TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
 
                 try {

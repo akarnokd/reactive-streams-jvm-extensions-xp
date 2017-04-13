@@ -28,11 +28,6 @@ public class EmptyStandardTckTest extends StandardPublisherVerification<Integer>
     }
 
     @Override
-    public Publisher<Integer> createErrorPublisher(int elements) {
-        return new ErrorPublisher<Integer>(new Exception());
-    }
-
-    @Override
     public int maximumNumberOfElements() {
         return 0;
     }

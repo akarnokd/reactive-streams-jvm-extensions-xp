@@ -43,15 +43,24 @@ public final class FusedRangePublisher implements Publisher<Integer> {
     @Override
     public void subscribe(Subscriber<? super Integer> s) {
         long trackerId = tracker.add();
+        IsFused sub;
         if (s instanceof ConditionalSubscriber) {
-            s.onSubscribe(new FusedRangeConditionalSubscription((ConditionalSubscriber<? super Integer>)s, start, count, error, trackerId, tracker));
+            sub = new FusedRangeConditionalSubscription((ConditionalSubscriber<? super Integer>)s, start, count, error, trackerId, tracker);
         } else {
             s = StrictAtomicSubscriber.wrap(s);
-            s.onSubscribe(new FusedRangeSubscription(s, start, count, error, trackerId, tracker));
+            sub = new FusedRangeSubscription(s, start, count, error, trackerId, tracker);
+        }
+        s.onSubscribe(sub);
+        if (count == 0 && !sub.isFused()) {
+            sub.request(1L);
         }
     }
 
-    static final class FusedRangeSubscription extends AtomicLong implements FusedQueueSubscription<Integer> {
+    interface IsFused extends FusedQueueSubscription<Integer> {
+        boolean isFused();
+    }
+
+    static final class FusedRangeSubscription extends AtomicLong implements IsFused {
 
         private static final long serialVersionUID = -216712975160550513L;
 
@@ -68,6 +77,8 @@ public final class FusedRangePublisher implements Publisher<Integer> {
         int index;
 
         volatile boolean cancelled;
+
+        boolean fused;
 
         FusedRangeSubscription(Subscriber<? super Integer> actual, int start, int count, Throwable error, long trackerId, CancellationTracker tracker) {
             this.actual = actual;
@@ -166,12 +177,19 @@ public final class FusedRangePublisher implements Publisher<Integer> {
 
         @Override
         public int requestFusion(int mode) {
-            return mode & SYNC;
+            int m = mode & SYNC;
+            fused = m != 0;
+            return m;
+        }
+
+        @Override
+        public boolean isFused() {
+            return fused;
         }
     }
 
 
-    static final class FusedRangeConditionalSubscription extends AtomicLong implements FusedQueueSubscription<Integer> {
+    static final class FusedRangeConditionalSubscription extends AtomicLong implements IsFused {
 
         private static final long serialVersionUID = -216712975160550513L;
 
@@ -188,6 +206,8 @@ public final class FusedRangePublisher implements Publisher<Integer> {
         final CancellationTracker tracker;
 
         final Throwable error;
+
+        boolean fused;
 
         FusedRangeConditionalSubscription(ConditionalSubscriber<? super Integer> actual, int start, int count, Throwable error, long trackerId, CancellationTracker tracker) {
             this.actual = actual;
@@ -281,7 +301,14 @@ public final class FusedRangePublisher implements Publisher<Integer> {
 
         @Override
         public int requestFusion(int mode) {
-            return mode & SYNC;
+            int m = mode & SYNC;
+            fused = m != 0;
+            return m;
+        }
+
+        @Override
+        public boolean isFused() {
+            return fused;
         }
     }
 

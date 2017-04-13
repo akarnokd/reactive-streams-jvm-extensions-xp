@@ -36,6 +36,10 @@ public final class FusedRangePublisher implements Publisher<Integer> {
 
     @Override
     public void subscribe(Subscriber<? super Integer> s) {
+        if (count == 0) {
+            EmptySubscription.complete(s);
+            return;
+        }
         if (s instanceof ConditionalSubscriber) {
             s.onSubscribe(new FusedRangeConditionalSubscription((ConditionalSubscriber<? super Integer>)s, start, count));
         } else {

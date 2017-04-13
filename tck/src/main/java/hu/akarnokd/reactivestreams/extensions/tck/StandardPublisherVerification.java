@@ -72,33 +72,35 @@ public abstract class StandardPublisherVerification<T> {
      * <p>
      * Override the {@link #mayReturnLessElements()} to indicate the Publisher
      * may return less elements than the number of elements specified at creation.
+     * <p>
+     * Override the {@link #isErrorPublisher()} to indicate the Publisher returned
+     * terminates with an onError instead of an onComplete.
      * @param elements the number of elements expected from the returned publisher
      * @return the Publisher instance prepared to be tested
      */
     public abstract Publisher<T> createPublisher(int elements);
 
     /**
-     * Called for each relevant test method and number of elements to be tested
-     * and the implementor of the verification class may return a non-null
-     * Publisher that is able to emit the number of elements specified
-     * followed by an error.
-     * <p>
-     * Override the {@link #maximumNumberOfElements()} to specify the maximum
-     * number of elements this Publisher can be created for. Default value
-     * is any length.
-     * <p>
-     * Override the {@link #mayReturnLessElements()} to indicate the Publisher
-     * may return less elements than the number of elements specified at creation.
-     * @param elements the number of elements expected from the returned publisher
-     * @return the Publisher instance prepared to be tested
+     * Override this method to specify the publisher created via {@link #createPublisher(int)}
+     * terminates with an onError instead of an onComplete.
+     * @return true if the Publisher terminates with an error
      */
-    public Publisher<T> createErrorPublisher(int elements) {
-        return null;
+    public boolean isErrorPublisher() {
+        return false;
+    }
+
+    /**
+     * Override this method to specify the minimum number of elements
+     * to create a Publisher for via {@link #createPublisher(int)}
+     * @return the minimum number of elements the Publisher supports
+     */
+    public int minimumNumberOfElements() {
+        return 0;
     }
 
     /**
      * Override this method to specify the maximum number of elements for both
-     * the {@link #createPublisher(int)} and {@link #createErrorPublisher(int)}
+     * the {@link #createPublisher(int)}
      * can return. The default implementation indicates an any-number Publisher.
      * @return the maximum number of elements
      */
@@ -107,8 +109,8 @@ public abstract class StandardPublisherVerification<T> {
     }
 
     /**
-     * Override this method to specify the {@link #createPublisher(int)} and
-     * {@link #createErrorPublisher(int)} may return fewer elements and
+     * Override this method to specify the {@link #createPublisher(int)}
+     * may return fewer elements and
      * terminate than the element count specified at creation time.
      * The default is false indicating a Publisher which can produce exactly the
      * required number of elements.
@@ -120,12 +122,14 @@ public abstract class StandardPublisherVerification<T> {
 
     @Test
     public void requiredPublisherWorks() {
-        runPublisher(true, false, new TestBody<T>() {
+        runPublisher(true, new TestBody<T>() {
             @Override
-            public void run(Publisher<T> pub, int elements, boolean exact) throws Throwable {
+            public void run(Publisher<T> pub, int elements, boolean exact, boolean error) throws Throwable {
                 TckStandardSubscriber<T> sub = settings.newStandardSubscriber();
                 try {
-                    sub.request(Long.MAX_VALUE);
+                    if (elements != 0) {
+                        sub.request(Long.MAX_VALUE);
+                    }
 
                     pub.subscribe(sub);
 
@@ -137,39 +141,13 @@ public abstract class StandardPublisherVerification<T> {
                         sub.expectAnyElements(elements);
                     }
 
-                    sub.expectComplete();
-
-                    sub.expectNoErrors();
-                } catch (Throwable ex) {
-                    sub.cancel();
-                    throw ex;
-                }
-            }
-        }, 0, 1, 2, 3, 5, 10, 20);
-    }
-
-
-    @Test
-    public void optionalErrorPublisherWorks() {
-        runPublisher(false, true, new TestBody<T>() {
-            @Override
-            public void run(Publisher<T> pub, int elements, boolean exact) throws Throwable {
-                TckStandardSubscriber<T> sub = settings.newStandardSubscriber();
-                try {
-                    sub.request(Long.MAX_VALUE);
-
-                    pub.subscribe(sub);
-
-                    sub.expectSubscribe();
-
-                    if (exact) {
-                        sub.expectElements(elements);
+                    if (error) {
+                        sub.expectError();
+                        sub.expectNoComplete();
                     } else {
-                        sub.expectAnyElements(elements);
+                        sub.expectComplete();
+                        sub.expectNoErrors();
                     }
-
-                    sub.expectError();
-                    sub.expectNoComplete();
                 } catch (Throwable ex) {
                     sub.cancel();
                     throw ex;
@@ -185,7 +163,7 @@ public abstract class StandardPublisherVerification<T> {
 
     protected interface TestBody<T> {
 
-        void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable;
+        void run(Publisher<T> publisher, int elements, boolean exact, boolean errorResult) throws Throwable;
 
     }
 
@@ -262,12 +240,11 @@ public abstract class StandardPublisherVerification<T> {
      * Runs the TestBody with either the normal or error Publisher created and with
      * the varargs array of element counts to try.
      * @param required should at least one of the element tests pass and not skip?
-     * @param error should the error Publisher checked?
      * @param body the callback that receives the current Publisher, the element count
      * and if the Publisher can return the exact number of items.
      * @param elements the number of elements to try
      */
-    protected final void runPublisher(boolean required, boolean error, TestBody<T> body, int... elements) {
+    protected final void runPublisher(boolean required, TestBody<T> body, int... elements) {
         int n = elements.length;
         if (n == 0) {
             throw new IllegalArgumentException("At least one element count must be specified");
@@ -280,32 +257,18 @@ public abstract class StandardPublisherVerification<T> {
 
         for (int element : elements) {
             try {
-                int elementSupport = maximumNumberOfElements();
-                if (elementSupport < 0 || elementSupport >= element) {
-                    if (error) {
-                        Publisher<T> pub = createErrorPublisher(element);
-                        if (pub != null) {
-                            boolean exact = mayReturnLessElements();
+                int minElementSupport = minimumNumberOfElements();
+                int maxElementSupport = maximumNumberOfElements();
+                if (element >= minElementSupport
+                        && (maxElementSupport < 0 || maxElementSupport >= element)) {
+                    Publisher<T> pub = createPublisher(element);
+                    boolean exact = !mayReturnLessElements();
+                    boolean error = isErrorPublisher();
 
-                            body.run(pub, element, exact);
-                        } else {
-                            errors.add(new SkipException("Error Publisher not available: " + element));
-                            elementCounts.add(element);
-                        }
-                    } else {
-                        Publisher<T> pub = createPublisher(element);
-                        boolean exact = mayReturnLessElements();
-
-                        body.run(pub, element, exact);
-                    }
+                    body.run(pub, element, exact, error);
                 } else {
-                    if (error) {
-                        errors.add(new SkipException("Error Publisher doesn't support this many elements. Required: " + element + ", Actual: " + elementSupport));
-                        elementCounts.add(element);
-                    } else {
-                        errors.add(new SkipException("Publisher doesn't support this many elements. Required: " + element + ", Actual: " + elementSupport));
-                        elementCounts.add(element);
-                    }
+                    errors.add(new SkipException("Publisher doesn't support this many elements. Required: " + element + ", Actual: " + minElementSupport + " .. " + maxElementSupport));
+                    elementCounts.add(element);
                 }
             } catch (SkipException ex) {
                 errors.add(ex);

@@ -20,16 +20,21 @@ import org.reactivestreams.Publisher;
 
 import hu.akarnokd.reactivestreams.extensions.tck.support.*;
 
-public class JustStandardTckTest extends StandardPublisherVerification<Integer> {
+public class JustErrorStandardTckTest extends StandardPublisherVerification<Integer> {
 
     @Override
     public Publisher<Integer> createPublisher(int elements) {
-        return new JustPublisher<Integer>(1);
+        return new JustErrorPublisher<Integer>(1, new Exception());
     }
 
     @Override
     public int maximumNumberOfElements() {
         return 1;
+    }
+
+    @Override
+    public boolean isErrorPublisher() {
+        return true;
     }
 
     @Override

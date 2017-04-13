@@ -33,9 +33,9 @@ public abstract class FusedPublisherVerification<T> extends RelaxedPublisherVeri
 
     @Test
     public void requiredFusedPublisherWorks() {
-        runPublisher(true, false, new TestBody<T>() {
+        runPublisher(true, new TestBody<T>() {
             @Override
-            public void run(Publisher<T> pub, int elements, boolean exact) throws Throwable {
+            public void run(Publisher<T> pub, int elements, boolean exact, boolean errorResult) throws Throwable {
                 TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
                 try {
                     sub.request(Long.MAX_VALUE);
@@ -53,42 +53,13 @@ public abstract class FusedPublisherVerification<T> extends RelaxedPublisherVeri
                         sub.expectAnyElements(elements);
                     }
 
-                    sub.expectComplete();
-
-                    sub.expectNoErrors();
-                } catch (Throwable ex) {
-                    sub.cancel();
-                    throw ex;
-                }
-            }
-        }, 0, 1, 2, 3, 5, 10, 20);
-    }
-
-
-    @Test
-    public void optionalFusedErrorPublisherWorks() {
-        runPublisher(false, true, new TestBody<T>() {
-            @Override
-            public void run(Publisher<T> pub, int elements, boolean exact) throws Throwable {
-                TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
-                try {
-                    sub.request(Long.MAX_VALUE);
-                    sub.setInitialFusionMode(FusedQueueSubscription.ANY);
-
-                    pub.subscribe(sub);
-
-                    sub.expectFusedSubscribe();
-
-                    sub.expectFusionMode(FusedQueueSubscription.ANY);
-
-                    if (exact) {
-                        sub.expectElements(elements);
+                    if (errorResult) {
+                        sub.expectError();
+                        sub.expectNoComplete();
                     } else {
-                        sub.expectAnyElements(elements);
+                        sub.expectComplete();
+                        sub.expectNoErrors();
                     }
-
-                    sub.expectError();
-                    sub.expectNoComplete();
                 } catch (Throwable ex) {
                     sub.cancel();
                     throw ex;
@@ -105,9 +76,9 @@ public abstract class FusedPublisherVerification<T> extends RelaxedPublisherVeri
             throw new NullPointerException("typicalItem() returned null");
         }
 
-        runPublisher(true, false, new TestBody<T>() {
+        runPublisher(true, new TestBody<T>() {
             @Override
-            public void run(Publisher<T> publisher, int elements, boolean exact) throws Throwable {
+            public void run(Publisher<T> publisher, int elements, boolean exact, boolean errorResult) throws Throwable {
                 TckFusedSubscriber<T> sub = settings.newFusedSubscriber();
                 sub.setInitialFusionMode(FusedQueueSubscription.ANY);
 

@@ -388,9 +388,9 @@ public class TckStandardSubscriber<T> implements Subscriber<T> {
     protected final AssertionError fail(String message) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
-        pw.println(message);
+        pw.print(message);
 
-        pw.print("onSubscribe: ");
+        pw.print(" (onSubscribe: ");
         pw.print(subscribeCount);
         pw.print(", onNext: ");
         pw.print(elementCount);
@@ -401,6 +401,7 @@ public class TckStandardSubscriber<T> implements Subscriber<T> {
         if (SubscriptionTools.isCancelled(upstream)) {
             pw.print(", cancelled");
         }
+        pw.println(")");
 
         for (Throwable e : errors) {
             e.printStackTrace(pw);

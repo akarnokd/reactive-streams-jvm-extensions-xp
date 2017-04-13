@@ -25,18 +25,23 @@ import org.testng.annotations.*;
 import hu.akarnokd.reactivestreams.extensions.tck.support.*;
 import hu.akarnokd.reactivestreams.extensions.tck.support.TckUndeliverableErrors.Handler;
 
-public class FusedRangePublisherTckTest extends FusedConditionalPublisherVerification<Integer> {
+public class FusedRangeErrorPublisherTckTest extends FusedConditionalPublisherVerification<Integer> {
 
     static final CancellationTracker TRACKER = new CancellationTracker();
 
     @Override
     public Publisher<Integer> createPublisher(int elements) {
-        return new FusedRangePublisher(1, elements, null, TRACKER);
+        return new FusedRangePublisher(1, elements, new Exception(), TRACKER);
     }
 
     @Override
     public Integer typicalItem() {
         return 1;
+    }
+
+    @Override
+    public boolean isErrorPublisher() {
+        return true;
     }
 
     @Override
