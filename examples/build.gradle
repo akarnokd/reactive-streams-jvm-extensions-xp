@@ -3,7 +3,7 @@ dependencies {
     compile project(':reactive-streams-extensions')
     compile project(':reactive-streams-extensions-tck')
     compile project(':reactive-streams-extensions-tools')
-    testCompile group: 'org.testng', name: 'testng', version:'6.11'
+    testCompile group: 'org.testng', name: 'testng', version:'6.10'
     testCompile 'org.reactivestreams:reactive-streams-tck:1.0.0'
 }
 
